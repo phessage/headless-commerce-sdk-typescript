@@ -6,6 +6,8 @@ Contract-first TypeScript client for browser and Node.js integrations.
 
 This preview implements the versioned `/v1/headless/products` catalog contract, typed RFC 9457-style errors, request correlation, and bounded retries for safe requests. The contract is implemented in `ecommerce-service` but is not claimed production-deployed until its release gate and a configured sandbox key pass.
 
+The cart client creates an anonymous cart and returns a capability `cartToken`. Keep that token in secure client storage and pass it to cart reads and mutations. Mutations are never automatically retried because replaying an add can duplicate quantity.
+
 ## Quick start
 
 ```bash

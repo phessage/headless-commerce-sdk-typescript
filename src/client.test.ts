@@ -23,4 +23,11 @@ describe('HeadlessCommerceClient', () => {
     expect(String(fetcher.mock.calls[0][0])).toContain('/v1/headless/products/p%2F1');
     expect(String(fetcher.mock.calls[1][0])).toContain('/v1/headless/products/categories');
   });
+  it('sends cart capability tokens and never retries mutations', async () => {
+    const fetcher = vi.fn(async () => new Response('{}',{status:503,statusText:'Unavailable'}));
+    const client = new HeadlessCommerceClient({baseUrl:'https://sandbox.test',publishableKey:'pk_test_demo',fetch:fetcher as typeof fetch,maxRetries:2});
+    await expect(client.carts.addItem('hc_token',{productId:'p1',quantity:2})).rejects.toMatchObject({problem:{status:503}});
+    expect(fetcher).toHaveBeenCalledTimes(1);
+    expect(fetcher.mock.calls[0][1]).toMatchObject({method:'POST',headers:{'x-cart-token':'hc_token'},body:JSON.stringify({productId:'p1',quantity:2})});
+  });
 });
