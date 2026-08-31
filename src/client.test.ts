@@ -30,4 +30,19 @@ describe('HeadlessCommerceClient', () => {
     expect(fetcher).toHaveBeenCalledTimes(1);
     expect(fetcher.mock.calls[0][1]).toMatchObject({method:'POST',headers:{'x-cart-token':'hc_token'},body:JSON.stringify({productId:'p1',quantity:2})});
   });
+  it('uses checkout preparation routes and never retries checkout mutations', async () => {
+    const fetcher = vi.fn(async () => new Response(JSON.stringify({data:{ready:false,missing:[]},requestId:'r'}),{status:200}));
+    const client = new HeadlessCommerceClient({baseUrl:'https://sandbox.test',publishableKey:'pk_test_demo',fetch:fetcher as typeof fetch,maxRetries:2});
+    await client.carts.getCheckout('hc_token');
+    await client.carts.updateCheckout('hc_token',{billingAddress:{country:'CA'}});
+    await client.carts.selectShippingMethod('hc_token','ship-id');
+    await client.carts.selectPaymentMethod('hc_token','pay-id');
+    expect(fetcher.mock.calls.map((call)=>[String(call[0]),call[1]?.method])).toEqual([
+      ['https://sandbox.test/v1/headless/carts/current/checkout','GET'],
+      ['https://sandbox.test/v1/headless/carts/current/checkout','PATCH'],
+      ['https://sandbox.test/v1/headless/carts/current/checkout/shipping-method','PUT'],
+      ['https://sandbox.test/v1/headless/carts/current/checkout/payment-method','PUT'],
+    ]);
+    expect(fetcher.mock.calls[1][1]?.headers).toMatchObject({'x-cart-token':'hc_token'});
+  });
 });

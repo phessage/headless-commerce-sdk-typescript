@@ -12,3 +12,10 @@ export interface Cart { id: string; currency: string; items: CartItem[]; totals:
 export interface CartResponse { data: Cart; requestId: string }
 export interface CreateCartResponse extends CartResponse { cartToken: string; created: true }
 export interface AddCartItemInput { productId: string; variantId?: string; quantity?: number }
+export interface CheckoutContact { firstName?: string; lastName?: string; email?: string; phone?: string }
+export interface CheckoutAddress extends CheckoutContact { company?: string; address1?: string; address2?: string; city?: string; state?: string; postalCode?: string; country?: string; sameAsBilling?: boolean }
+export interface CheckoutDetailsInput { customerInfo?: CheckoutContact; billingAddress?: CheckoutAddress; shippingAddress?: CheckoutAddress }
+export interface CheckoutShippingOption { id: string; name: string; description: string | null; amount: string; currency: string; estimatedDays: string | null; estimatedDeliveryDate: string | null; carrier: string | null; rateSource: string }
+export interface CheckoutPaymentMethod { id: string; name: string; description: string | null; type: string; icon: string | null; capabilities: Record<string, unknown> }
+export interface CheckoutPreparation { cart: Cart; customerInfo: CheckoutContact; billingAddress: CheckoutAddress; shippingAddress: CheckoutAddress; shippingOptions: CheckoutShippingOption[]; paymentMethods: CheckoutPaymentMethod[]; selectedShippingMethodId: string | null; selectedPaymentMethodId: string | null; ready: boolean; missing: string[] }
+export interface CheckoutPreparationResponse { data: CheckoutPreparation; requestId: string }
