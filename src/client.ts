@@ -1,17 +1,19 @@
-import type { ListProductsInput, Page, ProblemDetail, ProductSummary } from './types.js';
+import type { CategoryTreeResponse, ItemResponse, ListProductsInput, Page, ProblemDetail, ProductSummary } from './types.js';
 
 export class CommerceApiError extends Error {
   constructor(public readonly problem: ProblemDetail) { super(problem.detail ?? problem.title); this.name = 'CommerceApiError'; }
 }
 export interface ClientOptions { baseUrl: string; publishableKey: string; fetch?: typeof globalThis.fetch; maxRetries?: number }
 export class HeadlessCommerceClient {
-  readonly products: { list: (input?: ListProductsInput) => Promise<Page<ProductSummary>> };
+  readonly products: { list: (input?: ListProductsInput) => Promise<Page<ProductSummary>>; get: (id: string, signal?: AbortSignal) => Promise<ItemResponse<ProductSummary>> };
+  readonly categories: { list: (signal?: AbortSignal) => Promise<CategoryTreeResponse> };
   private readonly fetcher: typeof globalThis.fetch;
   constructor(private readonly options: ClientOptions) {
     if (!options.baseUrl || !options.publishableKey) throw new Error('baseUrl and publishableKey are required');
     if (!options.publishableKey.startsWith('pk_')) throw new Error('Browser clients require a publishable key');
     this.fetcher = options.fetch ?? globalThis.fetch;
-    this.products = { list: (input = {}) => this.listProducts(input) };
+    this.products = { list: (input = {}) => this.listProducts(input), get: (id, signal) => this.request(new URL(`/v1/headless/products/${encodeURIComponent(id)}`, this.options.baseUrl), signal) };
+    this.categories = { list: (signal) => this.request(new URL('/v1/headless/products/categories', this.options.baseUrl), signal) };
   }
   private async listProducts(input: ListProductsInput): Promise<Page<ProductSummary>> {
     const url = new URL('/v1/headless/products', this.options.baseUrl);

@@ -16,4 +16,11 @@ describe('HeadlessCommerceClient', () => {
     expect(fetcher).toHaveBeenCalledTimes(2);
   });
   it('rejects confidential-looking credentials', () => { expect(() => new HeadlessCommerceClient({baseUrl:'https://sandbox.test',publishableKey:'secret'})).toThrow('publishable key'); });
+  it('uses the detail and category contract routes', async () => {
+    const fetcher = vi.fn(async (url: URL | RequestInfo) => new Response(JSON.stringify(String(url).endsWith('/categories') ? {data:[],requestId:'c'} : {data:page.data[0],requestId:'p'}),{status:200}));
+    const client = new HeadlessCommerceClient({baseUrl:'https://sandbox.test',publishableKey:'pk_test_demo',fetch:fetcher as typeof fetch});
+    await client.products.get('p/1'); await client.categories.list();
+    expect(String(fetcher.mock.calls[0][0])).toContain('/v1/headless/products/p%2F1');
+    expect(String(fetcher.mock.calls[1][0])).toContain('/v1/headless/products/categories');
+  });
 });
