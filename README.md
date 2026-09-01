@@ -21,9 +21,8 @@ npm run build
 ```ts
 import { HeadlessCommerceClient } from '@phessage/headless-commerce-sdk';
 
-const client = new HeadlessCommerceClient({
-  baseUrl: 'https://sandbox.example.test',
-  publishableKey: 'pk_test_demo',
+const client = await HeadlessCommerceClient.forStore({
+  storeId: 'your-site-uuid',
 });
 
 const page = await client.products.list({ limit: 20 });
