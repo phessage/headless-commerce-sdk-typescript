@@ -1,37 +1,37 @@
 # 1Ecomm Headless Commerce TypeScript SDK
 
-Contract-first TypeScript client for browser and Node.js integrations.
+Use this package when a website or Node.js application needs to sell products from a 1Ecomm store without using the standard storefront.
 
-## Current scope
+## Start in five minutes
 
-This preview implements the versioned `/v1/headless/products` catalog contract, typed RFC 9457-style errors, request correlation, and bounded retries for safe requests. The contract is implemented in `ecommerce-service` but is not claimed production-deployed until its release gate and a configured sandbox key pass.
-
-The cart client creates an anonymous cart and returns a capability `cartToken`. Keep that token in secure client storage and pass it to cart reads and mutations. Mutations are never automatically retried because replaying an add can duplicate quantity.
-
-Checkout preparation can update guest contact/addresses, list server-authoritative shipping and checkout-ready payment choices, select those choices, and report missing prerequisites. `carts.placeOrder(cartToken, idempotencyKey)` places a pending order only when the selected method explicitly supports non-hosted placement. The caller owns the stable intent key and must reuse it after an uncertain result. Hosted payment, authorization, capture and refunds remain outside this preview.
-
-## Quick start
+You need Node.js 20 or newer and the store ID shown by 1Ecomm. A store ID identifies the store; it is not a password.
 
 ```bash
-npm install
-npm test
-npm run build
+npm ci
+npm run check
 ```
 
 ```ts
 import { HeadlessCommerceClient } from '@phessage/headless-commerce-sdk';
 
-const client = await HeadlessCommerceClient.forStore({
-  storeId: 'your-site-uuid',
-});
-
-const page = await client.products.list({ limit: 20 });
-const created = await client.carts.create();
-await client.carts.updateCheckout(created.cartToken, {
-  customerInfo: { email: 'buyer@example.com' },
-  billingAddress: { country: 'CA' },
-});
-const preparation = await client.carts.getCheckout(created.cartToken);
+const client = await HeadlessCommerceClient.forStore({ storeId: 'your-store-id' });
+const products = await client.products.list({ limit: 20 });
 ```
 
-See [architecture](docs/architecture.md), [security](docs/security.md), and [testing](docs/testing.md).
+The client discovers the correct public API settings from that one store ID. Do not put an administrator password or secret API key in a website or mobile app.
+
+Run `npm run test:live` to prove the complete maintained fixture journey against the deployed service. It creates an isolated cart and a pending bank-transfer test order; it does not charge money. Set `HEADLESS_STORE_ID` and `HEADLESS_PRODUCT_ID` only when testing another provisioned sandbox.
+
+## What the SDK supports
+
+- published product and category reads;
+- anonymous cart create, read, add, update and remove;
+- guest contact and address details;
+- shipping and payment choices calculated by 1Ecomm;
+- pending order placement when the chosen payment method explicitly allows a non-hosted order.
+
+For order placement, create one intent key and keep using that same key if the result is uncertain. This prevents a retry from becoming a second order. Ordinary cart changes are not retried automatically.
+
+## Preview limits
+
+This preview does not collect card or wallet payments, capture or refund money, merge a signed-in customer's cart, or deliver webhooks. See [architecture](docs/architecture.md), [security](docs/security.md), and [testing](docs/testing.md) for the technical contract.
