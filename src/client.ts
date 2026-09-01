@@ -4,6 +4,8 @@ export class CommerceApiError extends Error {
   constructor(public readonly problem: ProblemDetail) { super(problem.detail ?? problem.title); this.name = 'CommerceApiError'; }
 }
 export interface ClientOptions { baseUrl: string; publishableKey: string; fetch?: typeof globalThis.fetch; maxRetries?: number }
+export interface StoreClientOptions { storeId: string; bootstrapUrl?: string; fetch?: typeof globalThis.fetch; maxRetries?: number }
+export interface StoreRuntime { storeId: string; apiUrl: string; publishableKey: string; apiVersion: 'v1'; capabilities: Array<'catalog' | 'cart' | 'checkout-preparation'> }
 export class HeadlessCommerceClient {
   readonly products: { list: (input?: ListProductsInput) => Promise<Page<ProductSummary>>; get: (id: string, signal?: AbortSignal) => Promise<ItemResponse<ProductSummary>> };
   readonly categories: { list: (signal?: AbortSignal) => Promise<CategoryTreeResponse> };
@@ -19,6 +21,15 @@ export class HeadlessCommerceClient {
     selectPaymentMethod: (cartToken: string, id: string, signal?: AbortSignal) => Promise<CheckoutPreparationResponse>;
   };
   private readonly fetcher: typeof globalThis.fetch;
+  static async forStore(options: StoreClientOptions): Promise<HeadlessCommerceClient> {
+    const fetcher = options.fetch ?? globalThis.fetch;
+    const bootstrap = (options.bootstrapUrl ?? 'https://api.1ecomm.com').replace(/\/$/, '');
+    const response = await fetcher(`${bootstrap}/v1/headless/stores/${encodeURIComponent(options.storeId)}/config`, { headers: { accept: 'application/json' } });
+    if (!response.ok) throw new Error(`Headless store bootstrap failed (${response.status})`);
+    const runtime = (await response.json() as { data: StoreRuntime }).data;
+    if (runtime.storeId !== options.storeId || !runtime.publishableKey?.startsWith('pk_') || runtime.apiVersion !== 'v1') throw new Error('Invalid headless store bootstrap response');
+    return new HeadlessCommerceClient({ baseUrl: runtime.apiUrl, publishableKey: runtime.publishableKey, fetch: fetcher, maxRetries: options.maxRetries });
+  }
   constructor(private readonly options: ClientOptions) {
     if (!options.baseUrl || !options.publishableKey) throw new Error('baseUrl and publishableKey are required');
     if (!options.publishableKey.startsWith('pk_')) throw new Error('Browser clients require a publishable key');

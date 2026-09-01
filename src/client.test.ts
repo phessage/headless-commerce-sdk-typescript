@@ -2,6 +2,15 @@ import { describe, expect, it, vi } from 'vitest';
 import { HeadlessCommerceClient } from './client.js';
 const page = { data:[{id:'p1',slug:'trail-pack',name:'Trail Pack',description:'Demo',imageUrl:'/pack.svg',price:{amount:'89.00',currency:'USD'},available:true}],nextCursor:null,requestId:'req_1' };
 describe('HeadlessCommerceClient', () => {
+  it('constructs a tenant-bound client from one store ID', async () => {
+    const fetcher = vi.fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify({ data: { storeId: 'store-a', apiUrl: 'https://sandbox.test', publishableKey: 'pk_test_demo', apiVersion: 'v1', capabilities: ['catalog', 'cart', 'checkout-preparation'] } }), { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ data: [], nextCursor: null, requestId: 'r' }), { status: 200 }));
+    const client = await HeadlessCommerceClient.forStore({ storeId: 'store-a', fetch: fetcher });
+    await client.products.list();
+    expect(fetcher.mock.calls[0][0]).toBe('https://api.1ecomm.com/v1/headless/stores/store-a/config');
+    expect(fetcher.mock.calls[1][1]?.headers).toMatchObject({ 'x-publishable-key': 'pk_test_demo' });
+  });
   it('sends public tenant context and parses products', async () => {
     const fetcher = vi.fn(async () => new Response(JSON.stringify(page),{status:200}));
     const client = new HeadlessCommerceClient({baseUrl:'https://sandbox.test',publishableKey:'pk_test_demo',fetch:fetcher as typeof fetch});
