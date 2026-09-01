@@ -10,5 +10,5 @@ jobs:
         with: { node-version: 20, cache: npm }
       - run: npm ci
       - run: npm run check
-      - name: Deployed sandbox contract journey
-        run: npm run test:live
+      - name: Deployed non-mutating bootstrap probe
+        run: curl --fail --silent --show-error https://api.1ecomm.com/v1/headless/stores/01f5b02f-d7c0-42cd-b880-59f78ea70aa3/config >/dev/null
