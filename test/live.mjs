@@ -22,4 +22,6 @@ const selected = await client.carts.selectPaymentMethod(created.cartToken, payme
 if (!selected.data.ready || selected.data.missing.length) throw new Error(`Checkout is not ready: ${selected.data.missing.join(', ')}`);
 const order = await client.carts.placeOrder(created.cartToken, `typescript-live-${randomUUID()}`);
 if (order.data.requiresPayment !== false || order.data.paymentStatus !== 'pending') throw new Error('Pending non-hosted order confirmation is invalid');
-console.log(`TypeScript live order: ${order.data.orderNumber}`);
+const reopened = await client.orders.lookup(order.data.orderNumber, 'typescript-live@example.test');
+if (reopened.data.orderNumber !== order.data.orderNumber) throw new Error('Created order could not be reopened');
+console.log(`TypeScript live order created and reopened: ${order.data.orderNumber}`);

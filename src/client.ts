@@ -1,4 +1,4 @@
-import type { AddCartItemInput, CartResponse, CategoryTreeResponse, CheckoutDetailsInput, CheckoutPreparationResponse, CreateCartResponse, ItemResponse, ListProductsInput, Page, PlaceOrderResponse, ProblemDetail, ProductSummary } from './types.js';
+import type { AddCartItemInput, CartResponse, CategoryTreeResponse, CheckoutDetailsInput, CheckoutPreparationResponse, CreateCartResponse, ItemResponse, ListProductsInput, OrderLookupResponse, Page, PlaceOrderResponse, ProblemDetail, ProductSummary } from './types.js';
 
 export class CommerceApiError extends Error {
   constructor(public readonly problem: ProblemDetail) { super(problem.detail ?? problem.title); this.name = 'CommerceApiError'; }
@@ -9,6 +9,7 @@ export interface StoreRuntime { storeId: string; apiUrl: string; publishableKey:
 export class HeadlessCommerceClient {
   readonly products: { list: (input?: ListProductsInput) => Promise<Page<ProductSummary>>; get: (id: string, signal?: AbortSignal) => Promise<ItemResponse<ProductSummary>> };
   readonly categories: { list: (signal?: AbortSignal) => Promise<CategoryTreeResponse> };
+  readonly orders: { lookup: (orderNumber: string, email: string, signal?: AbortSignal) => Promise<OrderLookupResponse> };
   readonly carts: {
     create: (signal?: AbortSignal) => Promise<CreateCartResponse>;
     get: (cartToken: string, signal?: AbortSignal) => Promise<CartResponse>;
@@ -37,6 +38,7 @@ export class HeadlessCommerceClient {
     this.fetcher = options.fetch ?? globalThis.fetch;
     this.products = { list: (input = {}) => this.listProducts(input), get: (id, signal) => this.request(new URL(`/v1/headless/products/${encodeURIComponent(id)}`, this.options.baseUrl), signal) };
     this.categories = { list: (signal) => this.request(new URL('/v1/headless/products/categories', this.options.baseUrl), signal) };
+    this.orders = { lookup: (orderNumber, email, signal) => this.request(new URL('/v1/headless/orders/lookup', this.options.baseUrl), signal, { method: 'POST', body: { orderNumber, email }, retry: false }) };
     const current = () => new URL('/v1/headless/carts/current', this.options.baseUrl);
     const item = (id: string) => new URL(`/v1/headless/carts/current/items/${encodeURIComponent(id)}`, this.options.baseUrl);
     const checkout = () => new URL('/v1/headless/carts/current/checkout', this.options.baseUrl);

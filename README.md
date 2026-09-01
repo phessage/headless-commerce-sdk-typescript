@@ -16,6 +16,8 @@ import { HeadlessCommerceClient } from '@phessage/headless-commerce-sdk';
 
 const client = await HeadlessCommerceClient.forStore({ storeId: 'your-store-id' });
 const products = await client.products.list({ limit: 20 });
+const order = await client.orders.lookup('ORD123', 'buyer@example.com');
+console.log(order.data.status, order.data.tracking);
 ```
 
 The client discovers the correct public API settings from that one store ID. Do not put an administrator password or secret API key in a website or mobile app.
