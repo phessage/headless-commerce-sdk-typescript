@@ -73,4 +73,13 @@ describe('HeadlessCommerceClient', () => {
     expect(() => client.carts.placeOrder('hc_token',' ')).toThrow('idempotencyKey');
     expect(fetcher).not.toHaveBeenCalled();
   });
+  it('looks up an order with shopper proof and never retries the private input', async () => {
+    const result = {data:{orderNumber:'ORD1',status:'pending',items:[],tracking:null},requestId:'r'};
+    const fetcher = vi.fn(async () => new Response(JSON.stringify(result),{status:201}));
+    const client = new HeadlessCommerceClient({baseUrl:'https://sandbox.test',publishableKey:'pk_test_demo',fetch:fetcher as typeof fetch,maxRetries:2});
+    expect((await client.orders.lookup('ORD1','buyer@example.test')).data.status).toBe('pending');
+    expect(fetcher).toHaveBeenCalledTimes(1);
+    expect(fetcher.mock.calls[0][1]).toMatchObject({method:'POST',body:JSON.stringify({orderNumber:'ORD1',email:'buyer@example.test'})});
+    expect(String(fetcher.mock.calls[0][0])).toBe('https://sandbox.test/v1/headless/orders/lookup');
+  });
 });
