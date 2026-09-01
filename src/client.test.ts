@@ -54,4 +54,23 @@ describe('HeadlessCommerceClient', () => {
     ]);
     expect(fetcher.mock.calls[1][1]?.headers).toMatchObject({'x-cart-token':'hc_token'});
   });
+  it('retries order placement only with the same caller-owned intent key', async () => {
+    const confirmation = {data:{orderId:'o1',orderNumber:'ORD1',status:'pending',paymentStatus:'pending',requiresPayment:false},requestId:'r'};
+    const fetcher = vi.fn()
+      .mockResolvedValueOnce(new Response('{}',{status:503,statusText:'Unavailable'}))
+      .mockResolvedValueOnce(new Response(JSON.stringify(confirmation),{status:201}));
+    const client = new HeadlessCommerceClient({baseUrl:'https://sandbox.test',publishableKey:'pk_test_demo',fetch:fetcher,maxRetries:1});
+    expect((await client.carts.placeOrder('hc_token','checkout-intent-1')).data.orderNumber).toBe('ORD1');
+    expect(fetcher).toHaveBeenCalledTimes(2);
+    for (const call of fetcher.mock.calls) {
+      expect(call[1]).toMatchObject({method:'POST',headers:{'x-cart-token':'hc_token','Idempotency-Key':'checkout-intent-1'}});
+      expect(String(call[0])).toContain('/v1/headless/carts/current/checkout/order');
+    }
+  });
+  it('rejects an invalid order intent key before making a request', async () => {
+    const fetcher = vi.fn();
+    const client = new HeadlessCommerceClient({baseUrl:'https://sandbox.test',publishableKey:'pk_test_demo',fetch:fetcher});
+    expect(() => client.carts.placeOrder('hc_token',' ')).toThrow('idempotencyKey');
+    expect(fetcher).not.toHaveBeenCalled();
+  });
 });

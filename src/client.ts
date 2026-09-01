@@ -1,4 +1,4 @@
-import type { AddCartItemInput, CartResponse, CategoryTreeResponse, CheckoutDetailsInput, CheckoutPreparationResponse, CreateCartResponse, ItemResponse, ListProductsInput, Page, ProblemDetail, ProductSummary } from './types.js';
+import type { AddCartItemInput, CartResponse, CategoryTreeResponse, CheckoutDetailsInput, CheckoutPreparationResponse, CreateCartResponse, ItemResponse, ListProductsInput, Page, PlaceOrderResponse, ProblemDetail, ProductSummary } from './types.js';
 
 export class CommerceApiError extends Error {
   constructor(public readonly problem: ProblemDetail) { super(problem.detail ?? problem.title); this.name = 'CommerceApiError'; }
@@ -19,6 +19,7 @@ export class HeadlessCommerceClient {
     updateCheckout: (cartToken: string, input: CheckoutDetailsInput, signal?: AbortSignal) => Promise<CheckoutPreparationResponse>;
     selectShippingMethod: (cartToken: string, id: string, signal?: AbortSignal) => Promise<CheckoutPreparationResponse>;
     selectPaymentMethod: (cartToken: string, id: string, signal?: AbortSignal) => Promise<CheckoutPreparationResponse>;
+    placeOrder: (cartToken: string, idempotencyKey: string, signal?: AbortSignal) => Promise<PlaceOrderResponse>;
   };
   private readonly fetcher: typeof globalThis.fetch;
   static async forStore(options: StoreClientOptions): Promise<HeadlessCommerceClient> {
@@ -49,6 +50,11 @@ export class HeadlessCommerceClient {
       updateCheckout: (token, input, signal) => this.request(checkout(), signal, { method: 'PATCH', body: input, cartToken: token, retry: false }),
       selectShippingMethod: (token, id, signal) => this.request(new URL('/v1/headless/carts/current/checkout/shipping-method', this.options.baseUrl), signal, { method: 'PUT', body: { id }, cartToken: token, retry: false }),
       selectPaymentMethod: (token, id, signal) => this.request(new URL('/v1/headless/carts/current/checkout/payment-method', this.options.baseUrl), signal, { method: 'PUT', body: { id }, cartToken: token, retry: false }),
+      placeOrder: (token, idempotencyKey, signal) => {
+        const key = idempotencyKey.trim();
+        if (!key || key.length > 120) throw new Error('idempotencyKey must be a non-empty string of at most 120 characters');
+        return this.request(new URL('/v1/headless/carts/current/checkout/order', this.options.baseUrl), signal, { method: 'POST', cartToken: token, idempotencyKey: key });
+      },
     };
   }
   private async listProducts(input: ListProductsInput): Promise<Page<ProductSummary>> {
@@ -58,7 +64,7 @@ export class HeadlessCommerceClient {
     if (input.query) url.searchParams.set('query', input.query);
     return this.request<Page<ProductSummary>>(url, input.signal);
   }
-  private async request<T>(url: URL, signal?: AbortSignal, options: { method?: string; body?: unknown; cartToken?: string; retry?: boolean } = {}): Promise<T> {
+  private async request<T>(url: URL, signal?: AbortSignal, options: { method?: string; body?: unknown; cartToken?: string; idempotencyKey?: string; retry?: boolean } = {}): Promise<T> {
     const attempts = options.retry === false ? 1 : (this.options.maxRetries ?? 2) + 1;
     for (let attempt = 1; attempt <= attempts; attempt++) {
       const response = await this.fetcher(url, {
@@ -69,6 +75,7 @@ export class HeadlessCommerceClient {
           ...(options.body ? { 'content-type': 'application/json' } : {}),
           'x-publishable-key': this.options.publishableKey,
           ...(options.cartToken ? { 'x-cart-token': options.cartToken } : {}),
+          ...(options.idempotencyKey ? { 'Idempotency-Key': options.idempotencyKey } : {}),
         },
         ...(options.body ? { body: JSON.stringify(options.body) } : {}),
       });
