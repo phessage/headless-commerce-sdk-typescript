@@ -10,3 +10,5 @@ jobs:
         with: { node-version: 20, cache: npm }
       - run: npm ci
       - run: npm run check
+      - name: Deployed sandbox contract journey
+        run: npm run test:live
