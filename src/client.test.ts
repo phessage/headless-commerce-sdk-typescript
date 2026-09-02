@@ -19,10 +19,24 @@ describe('HeadlessCommerceClient', () => {
     expect(String(fetcher.mock.calls[0][0])).toContain('/v1/headless/products');
   });
   it('retries safe reads and returns typed problems', async () => {
-    const fetcher = vi.fn().mockResolvedValueOnce(new Response('{}',{status:503})).mockResolvedValueOnce(new Response(JSON.stringify({type:'x',title:'Not found',status:404,requestId:'req_2'}),{status:404}));
+    const fetcher = vi.fn().mockResolvedValueOnce(new Response('{}',{status:503,headers:{'Retry-After':'0'}})).mockResolvedValueOnce(new Response(JSON.stringify({type:'x',title:'Not found',status:404,requestId:'body-id'}),{status:404,headers:{'X-Request-Id':'header-id'}}));
     const client = new HeadlessCommerceClient({baseUrl:'https://sandbox.test',publishableKey:'pk_test_demo',fetch:fetcher,maxRetries:1});
-    await expect(client.products.list()).rejects.toMatchObject({problem:{status:404,requestId:'req_2'}});
+    await expect(client.products.list()).rejects.toMatchObject({problem:{status:404,requestId:'header-id'}});
     expect(fetcher).toHaveBeenCalledTimes(2);
+  });
+  it('honors Retry-After before replaying an eligible read', async () => {
+    vi.useFakeTimers();
+    const fetcher = vi.fn()
+      .mockResolvedValueOnce(new Response('{}',{status:429,headers:{'Retry-After':'2'}}))
+      .mockResolvedValueOnce(new Response(JSON.stringify(page),{status:200}));
+    const client = new HeadlessCommerceClient({baseUrl:'https://sandbox.test',publishableKey:'pk_test_demo',fetch:fetcher,maxRetries:1});
+    const pending = client.products.list();
+    await vi.advanceTimersByTimeAsync(1999);
+    expect(fetcher).toHaveBeenCalledTimes(1);
+    await vi.advanceTimersByTimeAsync(1);
+    await expect(pending).resolves.toMatchObject({requestId:'req_1'});
+    expect(fetcher).toHaveBeenCalledTimes(2);
+    vi.useRealTimers();
   });
   it('rejects confidential-looking credentials', () => { expect(() => new HeadlessCommerceClient({baseUrl:'https://sandbox.test',publishableKey:'secret'})).toThrow('publishable key'); });
   it('uses the detail and category contract routes', async () => {
