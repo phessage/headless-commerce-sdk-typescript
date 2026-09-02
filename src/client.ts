@@ -1,10 +1,11 @@
 import type { AddCartItemInput, CartResponse, CategoryTreeResponse, CheckoutDetailsInput, CheckoutPreparationResponse, CreateCartResponse, ItemResponse, ListProductsInput, OrderLookupResponse, Page, PlaceOrderResponse, ProblemDetail, ProductSummary } from './types.js';
 
 export class CommerceApiError extends Error {
-  constructor(public readonly problem: ProblemDetail) { super(problem.detail ?? problem.title); this.name = 'CommerceApiError'; }
+  constructor(public readonly problem: ProblemDetail, public readonly rateLimit: RateLimitDiagnostics) { super(problem.detail ?? problem.title); this.name = 'CommerceApiError'; }
 }
-export interface ClientOptions { baseUrl: string; publishableKey: string; fetch?: typeof globalThis.fetch; maxRetries?: number }
-export interface StoreClientOptions { storeId: string; bootstrapUrl?: string; fetch?: typeof globalThis.fetch; maxRetries?: number }
+export interface RateLimitDiagnostics { limit: number | null; remaining: number | null; reset: number | null; retryAfter: string | null }
+export interface ClientOptions { baseUrl: string; publishableKey: string; fetch?: typeof globalThis.fetch; maxRetries?: number; timeoutMs?: number }
+export interface StoreClientOptions { storeId: string; bootstrapUrl?: string; fetch?: typeof globalThis.fetch; maxRetries?: number; timeoutMs?: number }
 export interface StoreRuntime { storeId: string; apiUrl: string; publishableKey: string; apiVersion: 'v1'; capabilities: Array<'catalog' | 'cart' | 'checkout-preparation'> }
 export class HeadlessCommerceClient {
   readonly products: { list: (input?: ListProductsInput) => Promise<Page<ProductSummary>>; get: (id: string, signal?: AbortSignal) => Promise<ItemResponse<ProductSummary>> };
@@ -26,15 +27,19 @@ export class HeadlessCommerceClient {
   static async forStore(options: StoreClientOptions): Promise<HeadlessCommerceClient> {
     const fetcher = options.fetch ?? globalThis.fetch;
     const bootstrap = (options.bootstrapUrl ?? 'https://api.1ecomm.com').replace(/\/$/, '');
-    const response = await fetcher(`${bootstrap}/v1/headless/stores/${encodeURIComponent(options.storeId)}/config`, { headers: { accept: 'application/json' } });
+    const timeoutMs = HeadlessCommerceClient.validTimeout(options.timeoutMs);
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(new DOMException('Request timed out', 'TimeoutError')), timeoutMs);
+    const response = await fetcher(`${bootstrap}/v1/headless/stores/${encodeURIComponent(options.storeId)}/config`, { headers: { accept: 'application/json' }, signal: controller.signal }).finally(() => clearTimeout(timer));
     if (!response.ok) throw new Error(`Headless store bootstrap failed (${response.status})`);
     const runtime = (await response.json() as { data: StoreRuntime }).data;
     if (runtime.storeId !== options.storeId || !runtime.publishableKey?.startsWith('pk_') || runtime.apiVersion !== 'v1') throw new Error('Invalid headless store bootstrap response');
-    return new HeadlessCommerceClient({ baseUrl: runtime.apiUrl, publishableKey: runtime.publishableKey, fetch: fetcher, maxRetries: options.maxRetries });
+    return new HeadlessCommerceClient({ baseUrl: runtime.apiUrl, publishableKey: runtime.publishableKey, fetch: fetcher, maxRetries: options.maxRetries, timeoutMs });
   }
   constructor(private readonly options: ClientOptions) {
     if (!options.baseUrl || !options.publishableKey) throw new Error('baseUrl and publishableKey are required');
     if (!options.publishableKey.startsWith('pk_')) throw new Error('Browser clients require a publishable key');
+    HeadlessCommerceClient.validTimeout(options.timeoutMs);
     this.fetcher = options.fetch ?? globalThis.fetch;
     this.products = { list: (input = {}) => this.listProducts(input), get: (id, signal) => this.request(new URL(`/v1/headless/products/${encodeURIComponent(id)}`, this.options.baseUrl), signal) };
     this.categories = { list: (signal) => this.request(new URL('/v1/headless/products/categories', this.options.baseUrl), signal) };
@@ -69,8 +74,9 @@ export class HeadlessCommerceClient {
   private async request<T>(url: URL, signal?: AbortSignal, options: { method?: string; body?: unknown; cartToken?: string; idempotencyKey?: string; retry?: boolean } = {}): Promise<T> {
     const attempts = options.retry === false ? 1 : (this.options.maxRetries ?? 2) + 1;
     for (let attempt = 1; attempt <= attempts; attempt++) {
-      const response = await this.fetcher(url, {
-        signal,
+      let response: Response;
+      try {
+        response = await this.fetchWithTimeout(url, {
         method: options.method ?? 'GET',
         headers: {
           accept: 'application/json',
@@ -80,7 +86,12 @@ export class HeadlessCommerceClient {
           ...(options.idempotencyKey ? { 'Idempotency-Key': options.idempotencyKey } : {}),
         },
         ...(options.body ? { body: JSON.stringify(options.body) } : {}),
-      });
+        }, signal);
+      } catch (error) {
+        if (signal?.aborted || attempt >= attempts) throw error;
+        await this.waitBeforeRetry(undefined, attempt, signal);
+        continue;
+      }
       if (response.ok) return response.json() as Promise<T>;
       if ([429, 502, 503, 504].includes(response.status) && attempt < attempts) {
         await this.waitBeforeRetry(response, attempt, signal);
@@ -89,13 +100,18 @@ export class HeadlessCommerceClient {
       const fallback: ProblemDetail = { type: 'about:blank', title: response.statusText || 'Request failed', status: response.status };
       const parsed = await response.json().catch(() => ({})) as Partial<ProblemDetail>;
       const requestId = response.headers.get('x-request-id') ?? parsed.requestId;
-      throw new CommerceApiError({ ...fallback, ...parsed, ...(requestId ? { requestId } : {}) });
+      throw new CommerceApiError({ ...fallback, ...parsed, ...(requestId ? { requestId } : {}) }, {
+        limit: this.numberHeader(response, 'ratelimit-limit'),
+        remaining: this.numberHeader(response, 'ratelimit-remaining'),
+        reset: this.numberHeader(response, 'ratelimit-reset'),
+        retryAfter: response.headers.get('retry-after'),
+      });
     }
     throw new Error('unreachable');
   }
 
-  private async waitBeforeRetry(response: Response, attempt: number, signal?: AbortSignal) {
-    const retryAfter = response.headers.get('retry-after');
+  private async waitBeforeRetry(response: Response | undefined, attempt: number, signal?: AbortSignal) {
+    const retryAfter = response?.headers.get('retry-after') ?? null;
     let delayMs: number | undefined;
     if (retryAfter !== null) {
       const seconds = Number(retryAfter);
@@ -120,5 +136,27 @@ export class HeadlessCommerceClient {
       }, delayMs);
       signal?.addEventListener('abort', onAbort, { once: true });
     });
+  }
+
+  private async fetchWithTimeout(url: URL, init: RequestInit, callerSignal?: AbortSignal): Promise<Response> {
+    const controller = new AbortController();
+    const onAbort = () => controller.abort(callerSignal?.reason);
+    if (callerSignal?.aborted) onAbort(); else callerSignal?.addEventListener('abort', onAbort, { once: true });
+    const timer = setTimeout(() => controller.abort(new DOMException('Request timed out', 'TimeoutError')), HeadlessCommerceClient.validTimeout(this.options.timeoutMs));
+    try { return await this.fetcher(url, { ...init, signal: controller.signal }); }
+    finally { clearTimeout(timer); callerSignal?.removeEventListener('abort', onAbort); }
+  }
+
+  private numberHeader(response: Response, name: string): number | null {
+    const value = response.headers.get(name);
+    if (value === null) return null;
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+
+  private static validTimeout(value?: number): number {
+    const timeout = value ?? 10_000;
+    if (!Number.isFinite(timeout) || timeout <= 0 || timeout > 120_000) throw new Error('timeoutMs must be between 1 and 120000');
+    return timeout;
   }
 }

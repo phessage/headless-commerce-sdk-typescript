@@ -19,9 +19,9 @@ describe('HeadlessCommerceClient', () => {
     expect(String(fetcher.mock.calls[0][0])).toContain('/v1/headless/products');
   });
   it('retries safe reads and returns typed problems', async () => {
-    const fetcher = vi.fn().mockResolvedValueOnce(new Response('{}',{status:503,headers:{'Retry-After':'0'}})).mockResolvedValueOnce(new Response(JSON.stringify({type:'x',title:'Not found',status:404,requestId:'body-id'}),{status:404,headers:{'X-Request-Id':'header-id'}}));
+    const fetcher = vi.fn().mockResolvedValueOnce(new Response('{}',{status:503,headers:{'Retry-After':'0'}})).mockResolvedValueOnce(new Response(JSON.stringify({type:'x',title:'Not found',status:404,requestId:'body-id'}),{status:404,headers:{'X-Request-Id':'header-id','RateLimit-Limit':'100','RateLimit-Remaining':'0','RateLimit-Reset':'42','Retry-After':'7'}}));
     const client = new HeadlessCommerceClient({baseUrl:'https://sandbox.test',publishableKey:'pk_test_demo',fetch:fetcher,maxRetries:1});
-    await expect(client.products.list()).rejects.toMatchObject({problem:{status:404,requestId:'header-id'}});
+    await expect(client.products.list()).rejects.toMatchObject({problem:{status:404,requestId:'header-id'},rateLimit:{limit:100,remaining:0,reset:42,retryAfter:'7'}});
     expect(fetcher).toHaveBeenCalledTimes(2);
   });
   it('honors Retry-After before replaying an eligible read', async () => {
