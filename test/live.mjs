@@ -18,8 +18,8 @@ const prepared = await client.carts.updateCheckout(created.cartToken, {
 });
 const shipping = prepared.data.shippingOptions[0];
 const payment = prepared.data.paymentMethods.find((method) => method.capabilities.requiresHostedCheckout === false && method.capabilities.canPlaceOrder === true);
-if (!shipping || !payment) throw new Error('The fixture did not return a non-hosted checkout path');
-await client.carts.selectShippingMethod(created.cartToken, shipping.id);
+if (!payment) throw new Error('The fixture did not return a non-hosted checkout path');
+if (shipping) await client.carts.selectShippingMethod(created.cartToken, shipping.id);
 const selected = await client.carts.selectPaymentMethod(created.cartToken, payment.id);
 if (!selected.data.ready || selected.data.missing.length) throw new Error(`Checkout is not ready: ${selected.data.missing.join(', ')}`);
 const order = await client.carts.placeOrder(created.cartToken, `typescript-live-${randomUUID()}`);
