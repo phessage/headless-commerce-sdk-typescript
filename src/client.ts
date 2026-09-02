@@ -82,11 +82,43 @@ export class HeadlessCommerceClient {
         ...(options.body ? { body: JSON.stringify(options.body) } : {}),
       });
       if (response.ok) return response.json() as Promise<T>;
-      if ([429, 502, 503, 504].includes(response.status) && attempt < attempts) continue;
+      if ([429, 502, 503, 504].includes(response.status) && attempt < attempts) {
+        await this.waitBeforeRetry(response, attempt, signal);
+        continue;
+      }
       const fallback: ProblemDetail = { type: 'about:blank', title: response.statusText || 'Request failed', status: response.status };
       const parsed = await response.json().catch(() => ({})) as Partial<ProblemDetail>;
-      throw new CommerceApiError({ ...fallback, ...parsed });
+      const requestId = response.headers.get('x-request-id') ?? parsed.requestId;
+      throw new CommerceApiError({ ...fallback, ...parsed, ...(requestId ? { requestId } : {}) });
     }
     throw new Error('unreachable');
+  }
+
+  private async waitBeforeRetry(response: Response, attempt: number, signal?: AbortSignal) {
+    const retryAfter = response.headers.get('retry-after');
+    let delayMs: number | undefined;
+    if (retryAfter !== null) {
+      const seconds = Number(retryAfter);
+      if (Number.isFinite(seconds) && seconds >= 0) delayMs = seconds * 1000;
+      else {
+        const date = Date.parse(retryAfter);
+        if (Number.isFinite(date)) delayMs = Math.max(0, date - Date.now());
+      }
+    }
+    delayMs ??= 250 * 2 ** (attempt - 1) + Math.floor(Math.random() * 101);
+    delayMs = Math.min(delayMs, 30_000);
+    if (delayMs === 0) return;
+    if (signal?.aborted) throw signal.reason ?? new DOMException('Aborted', 'AbortError');
+    await new Promise<void>((resolve, reject) => {
+      const onAbort = () => {
+        clearTimeout(timer);
+        reject(signal?.reason ?? new DOMException('Aborted', 'AbortError'));
+      };
+      const timer = setTimeout(() => {
+        signal?.removeEventListener('abort', onAbort);
+        resolve();
+      }, delayMs);
+      signal?.addEventListener('abort', onAbort, { once: true });
+    });
   }
 }
