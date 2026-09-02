@@ -3,7 +3,9 @@ import { HeadlessCommerceClient } from '../dist/index.js';
 
 const storeId = process.env.HEADLESS_STORE_ID ?? '01f5b02f-d7c0-42cd-b880-59f78ea70aa3';
 const productId = process.env.HEADLESS_PRODUCT_ID ?? '1f7884bd-759d-4f47-9fdb-c7ea3dd3a9ef';
-const client = await HeadlessCommerceClient.forStore({ storeId });
+const client = process.env.HEADLESS_PUBLISHABLE_KEY
+  ? new HeadlessCommerceClient({ baseUrl: process.env.HEADLESS_API_URL ?? 'https://api.1ecomm.com', publishableKey: process.env.HEADLESS_PUBLISHABLE_KEY })
+  : await HeadlessCommerceClient.forStore({ storeId });
 const catalog = await client.products.list({ limit: 100 });
 if (!catalog.data.some((product) => product.id === productId)) throw new Error('Sellable fixture product is missing');
 
