@@ -130,10 +130,75 @@ try {
   }
   if (addresses.data.addresses[0]?.id !== secondAddressId) throw new Error('Default address was not listed first');
 
+  const checkout = await json(await headless('/v1/headless/carts/current/checkout', lease.publishableKey, {
+    method: 'PATCH',
+    headers: { 'x-cart-token': cart.cartToken },
+    body: JSON.stringify({
+      customerInfo: { firstName: 'Synthetic', lastName: 'Customer', email: lease.customer.email },
+      billingAddress: {
+        firstName: 'Synthetic',
+        lastName: 'Customer',
+        email: lease.customer.email,
+        address1: '2 Fixture Way',
+        city: 'Burnaby',
+        state: 'BC',
+        postalCode: 'V5H2N2',
+        country: 'CA',
+      },
+      shippingAddress: { sameAsBilling: true },
+    }),
+  }), 200);
+  const shipping = checkout.data.shippingOptions[0];
+  if (shipping) {
+    await json(await headless('/v1/headless/carts/current/checkout/shipping-method', lease.publishableKey, {
+      method: 'PUT',
+      headers: { 'x-cart-token': cart.cartToken },
+      body: JSON.stringify({ id: shipping.id }),
+    }), 200);
+  }
+  const payment = checkout.data.paymentMethods.find((method) =>
+    method.capabilities?.requiresHostedCheckout === false && method.capabilities?.canPlaceOrder === true);
+  if (!payment) throw new Error('Fixture did not provide a non-hosted order path');
+  const ready = await json(await headless('/v1/headless/carts/current/checkout/payment-method', lease.publishableKey, {
+    method: 'PUT',
+    headers: { 'x-cart-token': cart.cartToken },
+    body: JSON.stringify({ id: payment.id }),
+  }), 200);
+  if (ready.data.ready !== true || ready.data.missing.length !== 0) {
+    throw new Error(`Customer checkout was not ready: ${ready.data.missing.join(', ')}`);
+  }
+  const placed = await json(await headless('/v1/headless/carts/current/checkout/order', lease.publishableKey, {
+    method: 'POST',
+    headers: {
+      'x-cart-token': cart.cartToken,
+      'Idempotency-Key': `customer-account:${process.env.GITHUB_RUN_ID || randomUUID()}`,
+    },
+  }), 201);
+  if (!placed.data.orderId || placed.data.requiresPayment !== false) {
+    throw new Error('Customer order confirmation was incomplete');
+  }
+
   const orders = await json(await headless('/v1/headless/customer/orders', lease.publishableKey, {
     headers: { 'x-customer-token': login.data.token },
   }), 200);
   if (!Array.isArray(orders.data.data)) throw new Error('Customer order history did not return a collection');
+  if (!orders.data.data.some((order) => order.id === placed.data.orderId)) {
+    throw new Error('Placed order was absent from customer history');
+  }
+  const order = await json(await headless(`/v1/headless/customer/orders/${placed.data.orderId}`, lease.publishableKey, {
+    headers: { 'x-customer-token': login.data.token },
+  }), 200);
+  if (order.data.id !== placed.data.orderId || order.data.items.length !== 1) {
+    throw new Error('Customer order detail did not match the placed order');
+  }
+  const cancelled = await json(await headless(`/v1/headless/customer/orders/${placed.data.orderId}/cancel`, lease.publishableKey, {
+    method: 'POST',
+    headers: { 'x-customer-token': login.data.token },
+    body: JSON.stringify({ reason: 'Synthetic customer cancellation qualification' }),
+  }), 200);
+  if (cancelled.data.orderId !== placed.data.orderId || cancelled.data.status !== 'cancelled') {
+    throw new Error('Customer cancellation was not confirmed');
+  }
   const returns = await json(await headless('/v1/headless/customer/returns', lease.publishableKey, {
     headers: { 'x-customer-token': login.data.token },
   }), 200);
