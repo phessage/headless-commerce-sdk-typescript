@@ -1,4 +1,4 @@
-import type { AddCartItemInput, CartResponse, CategoryTreeResponse, CheckoutDetailsInput, CheckoutPreparationResponse, CreateCartResponse, ItemResponse, ListProductsInput, OrderLookupResponse, Page, PlaceOrderResponse, ProblemDetail, ProductSummary, CustomerAddressInput, CustomerAddressesResponse, CustomerAuthConfigResponse, CustomerOrderQuery, CustomerOrdersResponse, CustomerProfileResponse, CustomerReturnsResponse, CustomerSessionResponse, CreateReturnInput } from './types.js';
+import type { AddCartItemInput, CartResponse, CategoryTreeResponse, CheckoutDetailsInput, CheckoutPreparationResponse, CreateCartResponse, ItemResponse, ListProductsInput, OrderLookupResponse, Page, PlaceOrderResponse, ProblemDetail, ProductSummary, CustomerAddressInput, CustomerAddressesResponse, CustomerAuthConfigResponse, CustomerCartMergeResponse, CustomerOrderQuery, CustomerOrdersResponse, CustomerProfileResponse, CustomerReturnsResponse, CustomerSessionResponse, CreateReturnInput } from './types.js';
 
 export class CommerceApiError extends Error {
   constructor(public readonly problem: ProblemDetail, public readonly rateLimit: RateLimitDiagnostics) { super(problem.detail ?? problem.title); this.name = 'CommerceApiError'; }
@@ -33,7 +33,7 @@ export class HeadlessCommerceClient {
     logout: (refreshToken: string, signal?: AbortSignal) => Promise<ItemResponse<{ loggedOut: true }>>;
     profile: (token: string, signal?: AbortSignal) => Promise<CustomerProfileResponse>;
     updateProfile: (token: string, input: Partial<{ firstName: string; lastName: string; phone: string }>, signal?: AbortSignal) => Promise<CustomerProfileResponse>;
-    mergeCart: (token: string, cartToken: string, signal?: AbortSignal) => Promise<ItemResponse<Record<string, unknown>>>;
+    mergeCart: (token: string, cartToken: string, signal?: AbortSignal) => Promise<CustomerCartMergeResponse>;
     addresses: (token: string, signal?: AbortSignal) => Promise<CustomerAddressesResponse>;
     createAddress: (token: string, input: CustomerAddressInput, signal?: AbortSignal) => Promise<ItemResponse<Record<string, unknown>>>;
     updateAddress: (token: string, id: string, input: Partial<CustomerAddressInput>, signal?: AbortSignal) => Promise<ItemResponse<Record<string, unknown>>>;
