@@ -1,5 +1,7 @@
 # 1Ecomm Headless Commerce TypeScript SDK
 
+Free for authorized 1Ecomm customers and their developers to build and operate 1Ecomm-connected commerce experiences. You may deploy finished sites and compiled shopper apps, but may not redistribute, resell, sublicense, mirror, or republish this SDK or a reusable derivative. See [LICENSE.md](LICENSE.md).
+
 Use this package when a website or Node.js application needs to sell products from a 1Ecomm store without using the standard storefront.
 
 ## Start in five minutes
