@@ -22,6 +22,10 @@ This is the framework-neutral TypeScript wire client for 1Ecomm headless commerc
 - Keep browser and Node support; do not depend on Node-only globals in the core client.
 - A dependency upgrade includes `package-lock.json`, clean install, build and tests. Use stable dist-tags and respect declared Node engines.
 
+## License boundary
+
+`LICENSE.md` allows authorized 1Ecomm customer projects and deployed or compiled shopper applications, but prohibits redistribution of this reusable SDK/plugin or its derivatives. Preserve the notice in clones, packages, generated projects and documentation. Do not describe this repository as open source or grant broader rights in examples.
+
 ## Verification
 
 Run `rm -rf node_modules && npm ci`, `npm run check`, then `npm run test:live` only against the maintained sandbox. A new contract shape needs a unit/contract fixture that is seen failing before the fix. Never point tests at production shopper data or silently skip live prerequisites in CI.
