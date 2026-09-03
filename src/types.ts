@@ -25,3 +25,16 @@ export interface PlaceOrderResponse { data: OrderConfirmation; requestId: string
 export interface GuestOrderItem { productName: string; variantName: string | null; quantity: number; unitPrice: string | number; totalPrice: string | number; fulfillmentStatus: string | null; backordered: boolean; backorderedQuantity: number; isPreorder: boolean; expectedShipDate: string | null; estimatedDeliveryDate: string | null }
 export interface GuestOrder { id: string; orderNumber: string; status: string; paymentStatus: string; createdAt: string; currency: string; subtotal: string | number; taxAmount: string | number; shippingAmount: string | number; discountAmount: string | number; total: string | number; shippingAddress: Record<string, unknown> | null; items: GuestOrderItem[]; tracking: Record<string, unknown> | null }
 export interface OrderLookupResponse { data: GuestOrder; requestId: string }
+export interface CustomerSession { token: string; refreshToken: string; expiresIn: 900; customer?: CustomerProfile; cartInfo?: Record<string, unknown> }
+export interface CustomerProfile { id: string; email: string; firstName?: string | null; lastName?: string | null; phone?: string | null; [key: string]: unknown }
+export interface CustomerAddress { id: string; firstName: string; lastName: string; company?: string | null; address1: string; address2?: string | null; city: string; province: string; country: string; zip: string; phone?: string | null; isDefault?: boolean }
+export interface CustomerAddressInput { firstName: string; lastName: string; company?: string; address1: string; address2?: string; city: string; province: string; country: string; zip: string; phone?: string; setDefault?: boolean }
+export interface CustomerOrderQuery { page?: number; limit?: number; status?: string; signal?: AbortSignal }
+export interface ReturnItemInput { orderItemId: string; quantity: number; reason?: string; resolution?: 'refund' | 'replacement' | 'store_credit' }
+export interface CreateReturnInput { reason?: string; note?: string; items: ReturnItemInput[] }
+export interface CustomerAuthConfigResponse extends ItemResponse<Record<string, unknown>> {}
+export interface CustomerSessionResponse extends ItemResponse<CustomerSession> {}
+export interface CustomerProfileResponse extends ItemResponse<CustomerProfile> {}
+export interface CustomerAddressesResponse extends ItemResponse<CustomerAddress[]> {}
+export interface CustomerOrdersResponse extends ItemResponse<Record<string, unknown>> {}
+export interface CustomerReturnsResponse extends ItemResponse<Record<string, unknown>[]> {}
