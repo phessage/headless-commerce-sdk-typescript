@@ -11,6 +11,8 @@ npm ci
 npm run check
 ```
 
+Published preview builds are private organization packages. Configure GitHub Packages authentication, then install `@phessage/headless-commerce-sdk`; source clones continue to use `npm ci`. Every release is built from one immutable tag and includes a clean tarball-install smoke, an SPDX dependency SBOM and SHA-256 checksums on its GitHub Release.
+
 ```ts
 import { HeadlessCommerceClient } from '@phessage/headless-commerce-sdk';
 

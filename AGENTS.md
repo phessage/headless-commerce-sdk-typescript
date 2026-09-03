@@ -27,3 +27,7 @@ This is the framework-neutral TypeScript wire client for 1Ecomm headless commerc
 Run `rm -rf node_modules && npm ci`, `npm run check`, then `npm run test:live` only against the maintained sandbox. A new contract shape needs a unit/contract fixture that is seen failing before the fix. Never point tests at production shopper data or silently skip live prerequisites in CI.
 
 Update README/security/testing docs whenever behavior changes. State “implemented and locally tested” separately from “deployed and live-proven.”
+
+## Releases
+
+`.github/workflows/release.yml` is the only package publisher. It requires the protected `package-release` environment, an exact version match and a previously unused `v<version>` tag; it tests and install-smokes the packed artifact before publishing to the restricted `@phessage` GitHub Packages registry, then creates the tag and GitHub Release with SBOM/checksums. Never publish from a workstation, move a release tag or replace an existing package version.
