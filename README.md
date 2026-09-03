@@ -24,6 +24,8 @@ The client discovers the correct public API settings from that one store ID. Do 
 
 Run `npm run test:live` to prove the complete maintained fixture journey against the deployed service. It creates an isolated cart and a pending bank-transfer test order; it does not charge money. Set `HEADLESS_STORE_ID` and `HEADLESS_PRODUCT_ID` only when testing another provisioned sandbox.
 
+CI allocates a short-lived, repository-specific fixture, supplies its direct runtime credentials to this journey, and revokes them in an `always()` cleanup step. A missing allocator secret is a hard failure, never a skipped green gate.
+
 ## What the SDK supports
 
 - published product and category reads;
