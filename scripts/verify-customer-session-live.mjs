@@ -73,9 +73,10 @@ try {
       'x-cart-token': cart.cartToken,
     },
   }), 200);
-  if (merged.data.merged !== true || !merged.data.cartId) {
+  if (merged.data.merged !== true || !merged.data.cartId || !merged.data.cartToken?.startsWith('hc_')) {
     throw new Error('Anonymous cart was not attached to the customer');
   }
+  const customerCartToken = merged.data.cartToken;
 
   const createdAddress = await json(await headless('/v1/headless/customer/addresses', lease.publishableKey, {
     method: 'POST',
@@ -132,7 +133,7 @@ try {
 
   const checkout = await json(await headless('/v1/headless/carts/current/checkout', lease.publishableKey, {
     method: 'PATCH',
-    headers: { 'x-cart-token': cart.cartToken },
+    headers: { 'x-cart-token': customerCartToken },
     body: JSON.stringify({
       customerInfo: { firstName: 'Synthetic', lastName: 'Customer', email: lease.customer.email },
       billingAddress: {
@@ -152,7 +153,7 @@ try {
   if (shipping) {
     await json(await headless('/v1/headless/carts/current/checkout/shipping-method', lease.publishableKey, {
       method: 'PUT',
-      headers: { 'x-cart-token': cart.cartToken },
+      headers: { 'x-cart-token': customerCartToken },
       body: JSON.stringify({ id: shipping.id }),
     }), 200);
   }
@@ -161,7 +162,7 @@ try {
   if (!payment) throw new Error('Fixture did not provide a non-hosted order path');
   const ready = await json(await headless('/v1/headless/carts/current/checkout/payment-method', lease.publishableKey, {
     method: 'PUT',
-    headers: { 'x-cart-token': cart.cartToken },
+    headers: { 'x-cart-token': customerCartToken },
     body: JSON.stringify({ id: payment.id }),
   }), 200);
   if (ready.data.ready !== true || ready.data.missing.length !== 0) {
@@ -170,7 +171,7 @@ try {
   const placed = await json(await headless('/v1/headless/carts/current/checkout/order', lease.publishableKey, {
     method: 'POST',
     headers: {
-      'x-cart-token': cart.cartToken,
+      'x-cart-token': customerCartToken,
       'Idempotency-Key': `customer-account:${process.env.GITHUB_RUN_ID || randomUUID()}`,
     },
   }), 201);

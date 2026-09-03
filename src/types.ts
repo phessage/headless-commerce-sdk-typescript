@@ -29,12 +29,16 @@ export interface CustomerSession { token: string; refreshToken: string; expiresI
 export interface CustomerProfile { id: string; email: string; firstName?: string | null; lastName?: string | null; phone?: string | null; [key: string]: unknown }
 export interface CustomerAddress { id: string; firstName: string; lastName: string; company?: string | null; address1: string; address2?: string | null; city: string; province: string; country: string; zip: string; phone?: string | null; isDefault?: boolean }
 export interface CustomerAddressInput { firstName: string; lastName: string; company?: string; address1: string; address2?: string; city: string; province: string; country: string; zip: string; phone?: string; setDefault?: boolean }
+export interface CustomerCartMerge { merged: boolean; cartId: string | null; cartToken: string | null }
+export interface CustomerOrderItem { id: string; productName: string; variantName: string | null; quantity: number; unitPrice: string | number; totalPrice: string | number; fulfillmentStatus: string | null; fulfilledQuantity: number; backordered: boolean; expectedShipDate: string | null; estimatedDeliveryDate: string | null }
+export interface CustomerOrder { id: string; orderNumber: string; status: string; paymentStatus: string; createdAt: string; currency: string; subtotal: string | number; taxAmount: string | number; shippingAmount: string | number; discountAmount: string | number; total: string | number; items: CustomerOrderItem[] }
 export interface CustomerOrderQuery { page?: number; limit?: number; status?: string; signal?: AbortSignal }
 export interface ReturnItemInput { orderItemId: string; quantity: number; reason?: string; resolution?: 'refund' | 'replacement' | 'store_credit' }
 export interface CreateReturnInput { reason?: string; note?: string; items: ReturnItemInput[] }
 export interface CustomerAuthConfigResponse extends ItemResponse<Record<string, unknown>> {}
 export interface CustomerSessionResponse extends ItemResponse<CustomerSession> {}
 export interface CustomerProfileResponse extends ItemResponse<CustomerProfile> {}
-export interface CustomerAddressesResponse extends ItemResponse<CustomerAddress[]> {}
-export interface CustomerOrdersResponse extends ItemResponse<Record<string, unknown>> {}
-export interface CustomerReturnsResponse extends ItemResponse<Record<string, unknown>[]> {}
+export interface CustomerCartMergeResponse extends ItemResponse<CustomerCartMerge> {}
+export interface CustomerAddressesResponse extends ItemResponse<{ addresses: CustomerAddress[] }> {}
+export interface CustomerOrdersResponse extends ItemResponse<{ data: CustomerOrder[]; total: number; page: number; limit: number; totalPages?: number }> {}
+export interface CustomerReturnsResponse extends ItemResponse<{ returns: Record<string, unknown>[] }> {}
