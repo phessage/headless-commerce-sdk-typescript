@@ -1,0 +1,21 @@
+name: Customer session live
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  customer-session:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Exercise isolated deployed customer lifecycle
+        env:
+          HEADLESS_E2E_ALLOCATOR_TOKEN: ${{ secrets.HEADLESS_E2E_ALLOCATOR_TOKEN }}
+        run: node scripts/verify-customer-session-live.mjs
