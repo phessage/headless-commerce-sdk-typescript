@@ -4,13 +4,14 @@ This file is the authority for AI-assisted work in this repository. Read it, `RE
 
 ## Purpose and boundary
 
-This is the framework-neutral TypeScript wire client for 1Ecomm headless commerce. It is not a storefront and must not invent commerce decisions. Canonical HTTP truth is `phessage/ecommerce-service/contracts/headless-commerce-v1.openapi.yaml`; verify that file and deployed behavior before changing a route, field or status. Current scope is store bootstrap, public catalog, anonymous cart, checkout preparation, capability-gated order placement, guest order lookup, hosted checkout handoff and signed outbound webhook verification. Capture/refund and customer accounts are not public SDK operations.
+This is the framework-neutral TypeScript wire client for 1Ecomm headless commerce. It is not a storefront and must not invent commerce decisions. Canonical HTTP truth is `phessage/ecommerce-service/contracts/headless-commerce-v1.openapi.yaml`; verify that file and deployed behavior before changing a route, field or status. Current scope includes customer authentication/session/profile/address/order/return operations alongside catalog, cart, checkout, order, hosted handoff and webhooks. Capture/refund initiation is not a public SDK operation.
 
 ## Contract rules
 
 - `storeId` is the only onboarding value. `forStore` resolves `apiUrl` and a publishable key and must reject a mismatched store.
 - `x-publishable-key` selects the tenant; never add caller-selected site scope.
 - `x-cart-token` is a bearer capability. Never put it in a URL, log, analytics event or exception.
+- Customer access and refresh tokens are bearer credentials. Rotate refresh state after every successful refresh and clear both credentials on logout.
 - Do not retry mutations. Order placement may retry only with the exact same cart token and caller-owned idempotency key. Lookup is never automatically retried.
 - Parse only documented projections. Do not infer fields: order count is `items.length`; there is no `itemCount` contract.
 - Preserve neutral `404` behavior for order-number/email proof and expose typed problem/request metadata.

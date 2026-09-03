@@ -1,4 +1,4 @@
-import type { AddCartItemInput, CartResponse, CategoryTreeResponse, CheckoutDetailsInput, CheckoutPreparationResponse, CreateCartResponse, ItemResponse, ListProductsInput, OrderLookupResponse, Page, PlaceOrderResponse, ProblemDetail, ProductSummary } from './types.js';
+import type { AddCartItemInput, CartResponse, CategoryTreeResponse, CheckoutDetailsInput, CheckoutPreparationResponse, CreateCartResponse, ItemResponse, ListProductsInput, OrderLookupResponse, Page, PlaceOrderResponse, ProblemDetail, ProductSummary, CustomerAddressInput, CustomerAddressesResponse, CustomerAuthConfigResponse, CustomerOrderQuery, CustomerOrdersResponse, CustomerProfileResponse, CustomerReturnsResponse, CustomerSessionResponse, CreateReturnInput } from './types.js';
 
 export class CommerceApiError extends Error {
   constructor(public readonly problem: ProblemDetail, public readonly rateLimit: RateLimitDiagnostics) { super(problem.detail ?? problem.title); this.name = 'CommerceApiError'; }
@@ -22,6 +22,30 @@ export class HeadlessCommerceClient {
     selectShippingMethod: (cartToken: string, id: string, signal?: AbortSignal) => Promise<CheckoutPreparationResponse>;
     selectPaymentMethod: (cartToken: string, id: string, signal?: AbortSignal) => Promise<CheckoutPreparationResponse>;
     placeOrder: (cartToken: string, idempotencyKey: string, signal?: AbortSignal) => Promise<PlaceOrderResponse>;
+  };
+  readonly customer: {
+    authConfig: (signal?: AbortSignal) => Promise<CustomerAuthConfigResponse>;
+    login: (email: string, password: string, cartToken?: string, signal?: AbortSignal) => Promise<CustomerSessionResponse>;
+    requestOtp: (channel: 'email' | 'sms', destination: string, region?: string, signal?: AbortSignal) => Promise<ItemResponse<Record<string, unknown>>>;
+    verifyOtp: (input: { channel: 'email' | 'sms'; destination: string; code: string; region?: string; firstName?: string; lastName?: string }, cartToken?: string, signal?: AbortSignal) => Promise<CustomerSessionResponse>;
+    socialLogin: (provider: 'google' | 'apple', idToken: string, cartToken?: string, signal?: AbortSignal) => Promise<CustomerSessionResponse>;
+    refresh: (refreshToken: string, signal?: AbortSignal) => Promise<CustomerSessionResponse>;
+    logout: (refreshToken: string, signal?: AbortSignal) => Promise<ItemResponse<{ loggedOut: true }>>;
+    profile: (token: string, signal?: AbortSignal) => Promise<CustomerProfileResponse>;
+    updateProfile: (token: string, input: Partial<{ firstName: string; lastName: string; phone: string }>, signal?: AbortSignal) => Promise<CustomerProfileResponse>;
+    mergeCart: (token: string, cartToken: string, signal?: AbortSignal) => Promise<ItemResponse<Record<string, unknown>>>;
+    addresses: (token: string, signal?: AbortSignal) => Promise<CustomerAddressesResponse>;
+    createAddress: (token: string, input: CustomerAddressInput, signal?: AbortSignal) => Promise<ItemResponse<Record<string, unknown>>>;
+    updateAddress: (token: string, id: string, input: Partial<CustomerAddressInput>, signal?: AbortSignal) => Promise<ItemResponse<Record<string, unknown>>>;
+    deleteAddress: (token: string, id: string, signal?: AbortSignal) => Promise<ItemResponse<{ deleted: true }>>;
+    setDefaultAddress: (token: string, id: string, signal?: AbortSignal) => Promise<ItemResponse<Record<string, unknown>>>;
+    orders: (token: string, input?: CustomerOrderQuery) => Promise<CustomerOrdersResponse>;
+    order: (token: string, id: string, signal?: AbortSignal) => Promise<ItemResponse<Record<string, unknown>>>;
+    cancelOrder: (token: string, id: string, reason: string, signal?: AbortSignal) => Promise<ItemResponse<Record<string, unknown>>>;
+    returns: (token: string, signal?: AbortSignal) => Promise<CustomerReturnsResponse>;
+    orderReturns: (token: string, orderId: string, signal?: AbortSignal) => Promise<CustomerReturnsResponse>;
+    createReturn: (token: string, orderId: string, input: CreateReturnInput, signal?: AbortSignal) => Promise<ItemResponse<Record<string, unknown>>>;
+    cancelReturn: (token: string, id: string, signal?: AbortSignal) => Promise<ItemResponse<Record<string, unknown>>>;
   };
   private readonly fetcher: typeof globalThis.fetch;
   static async forStore(options: StoreClientOptions): Promise<HeadlessCommerceClient> {
@@ -63,6 +87,33 @@ export class HeadlessCommerceClient {
         return this.request(new URL('/v1/headless/carts/current/checkout/order', this.options.baseUrl), signal, { method: 'POST', cartToken: token, idempotencyKey: key });
       },
     };
+    const customerUrl = (path: string) => new URL(`/v1/headless/customer${path}`, this.options.baseUrl);
+    const customerRequest = <T>(method: string, path: string, token?: string, body?: unknown, cartToken?: string, signal?: AbortSignal) =>
+      this.request<T>(customerUrl(path), signal, { method, body, customerToken: token, cartToken, retry: method === 'GET' });
+    this.customer = {
+      authConfig: (signal) => customerRequest('GET', '/auth/config', undefined, undefined, undefined, signal),
+      login: (email, password, cartToken, signal) => customerRequest('POST', '/auth/login', undefined, { email, password }, cartToken, signal),
+      requestOtp: (channel, destination, region, signal) => customerRequest('POST', '/auth/otp/request', undefined, { channel, destination, ...(region ? { region } : {}) }, undefined, signal),
+      verifyOtp: (input, cartToken, signal) => customerRequest('POST', '/auth/otp/verify', undefined, input, cartToken, signal),
+      socialLogin: (provider, idToken, cartToken, signal) => customerRequest('POST', `/auth/social/${provider}`, undefined, { idToken }, cartToken, signal),
+      refresh: (refreshToken, signal) => customerRequest('POST', '/auth/refresh', undefined, { refreshToken }, undefined, signal),
+      logout: (refreshToken, signal) => customerRequest('POST', '/auth/logout', undefined, { refreshToken }, undefined, signal),
+      profile: (token, signal) => customerRequest('GET', '/me', token, undefined, undefined, signal),
+      updateProfile: (token, input, signal) => customerRequest('PATCH', '/me', token, input, undefined, signal),
+      mergeCart: (token, cartToken, signal) => customerRequest('POST', '/cart/merge', token, undefined, cartToken, signal),
+      addresses: (token, signal) => customerRequest('GET', '/addresses', token, undefined, undefined, signal),
+      createAddress: (token, input, signal) => customerRequest('POST', '/addresses', token, input, undefined, signal),
+      updateAddress: (token, id, input, signal) => customerRequest('PATCH', `/addresses/${encodeURIComponent(id)}`, token, input, undefined, signal),
+      deleteAddress: (token, id, signal) => customerRequest('DELETE', `/addresses/${encodeURIComponent(id)}`, token, undefined, undefined, signal),
+      setDefaultAddress: (token, id, signal) => customerRequest('POST', `/addresses/${encodeURIComponent(id)}/default`, token, undefined, undefined, signal),
+      orders: (token, input = {}) => { const url = customerUrl('/orders'); if (input.page) url.searchParams.set('page', String(input.page)); if (input.limit) url.searchParams.set('limit', String(input.limit)); if (input.status) url.searchParams.set('status', input.status); return this.request(url, input.signal, { customerToken: token }); },
+      order: (token, id, signal) => customerRequest('GET', `/orders/${encodeURIComponent(id)}`, token, undefined, undefined, signal),
+      cancelOrder: (token, id, reason, signal) => customerRequest('POST', `/orders/${encodeURIComponent(id)}/cancel`, token, { reason }, undefined, signal),
+      returns: (token, signal) => customerRequest('GET', '/returns', token, undefined, undefined, signal),
+      orderReturns: (token, orderId, signal) => customerRequest('GET', `/orders/${encodeURIComponent(orderId)}/returns`, token, undefined, undefined, signal),
+      createReturn: (token, orderId, input, signal) => customerRequest('POST', `/orders/${encodeURIComponent(orderId)}/returns`, token, input, undefined, signal),
+      cancelReturn: (token, id, signal) => customerRequest('POST', `/returns/${encodeURIComponent(id)}/cancel`, token, undefined, undefined, signal),
+    };
   }
   private async listProducts(input: ListProductsInput): Promise<Page<ProductSummary>> {
     const url = new URL('/v1/headless/products', this.options.baseUrl);
@@ -71,7 +122,7 @@ export class HeadlessCommerceClient {
     if (input.query) url.searchParams.set('query', input.query);
     return this.request<Page<ProductSummary>>(url, input.signal);
   }
-  private async request<T>(url: URL, signal?: AbortSignal, options: { method?: string; body?: unknown; cartToken?: string; idempotencyKey?: string; retry?: boolean } = {}): Promise<T> {
+  private async request<T>(url: URL, signal?: AbortSignal, options: { method?: string; body?: unknown; cartToken?: string; customerToken?: string; idempotencyKey?: string; retry?: boolean } = {}): Promise<T> {
     const attempts = options.retry === false ? 1 : (this.options.maxRetries ?? 2) + 1;
     for (let attempt = 1; attempt <= attempts; attempt++) {
       let response: Response;
@@ -83,6 +134,7 @@ export class HeadlessCommerceClient {
           ...(options.body ? { 'content-type': 'application/json' } : {}),
           'x-publishable-key': this.options.publishableKey,
           ...(options.cartToken ? { 'x-cart-token': options.cartToken } : {}),
+          ...(options.customerToken ? { 'x-customer-token': options.customerToken } : {}),
           ...(options.idempotencyKey ? { 'Idempotency-Key': options.idempotencyKey } : {}),
         },
         ...(options.body ? { body: JSON.stringify(options.body) } : {}),
