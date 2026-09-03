@@ -36,6 +36,19 @@ try {
     }),
   }), 201);
 
+  const cart = await json(await headless('/v1/headless/carts', lease.publishableKey, {
+    method: 'POST',
+  }), 201);
+  await json(await headless('/v1/headless/carts/current/items', lease.publishableKey, {
+    method: 'POST',
+    headers: { 'x-cart-token': cart.cartToken },
+    body: JSON.stringify({
+      productId: lease.productId,
+      variantId: lease.variantId,
+      quantity: 1,
+    }),
+  }), 201);
+
   const login = await json(await headless('/v1/headless/customer/auth/login', lease.publishableKey, {
     method: 'POST',
     body: JSON.stringify(lease.customer),
@@ -44,6 +57,94 @@ try {
     throw new Error('Login did not return a complete short-lived session');
   }
   await json(await headless('/v1/headless/customer/me', lease.publishableKey, {
+    headers: { 'x-customer-token': login.data.token },
+  }), 200);
+  const profile = await json(await headless('/v1/headless/customer/me', lease.publishableKey, {
+    method: 'PATCH',
+    headers: { 'x-customer-token': login.data.token },
+    body: JSON.stringify({ firstName: 'Synthetic E2E' }),
+  }), 200);
+  if (profile.data.firstName !== 'Synthetic E2E') throw new Error('Profile update was not returned');
+
+  const merged = await json(await headless('/v1/headless/customer/cart/merge', lease.publishableKey, {
+    method: 'POST',
+    headers: {
+      'x-customer-token': login.data.token,
+      'x-cart-token': cart.cartToken,
+    },
+  }), 200);
+  if (merged.data.merged !== true || !merged.data.cartId) {
+    throw new Error('Anonymous cart was not attached to the customer');
+  }
+
+  const createdAddress = await json(await headless('/v1/headless/customer/addresses', lease.publishableKey, {
+    method: 'POST',
+    headers: { 'x-customer-token': login.data.token },
+    body: JSON.stringify({
+      firstName: 'Synthetic',
+      lastName: 'Customer',
+      address1: '1 Fixture Way',
+      city: 'Vancouver',
+      province: 'BC',
+      country: 'CA',
+      zip: 'V6B1A1',
+      setDefault: true,
+    }),
+  }), 201);
+  const addressId = createdAddress.data.address.id;
+  if (!addressId || createdAddress.data.address.isDefault !== true) {
+    throw new Error('Address creation did not establish a default address');
+  }
+  const updatedAddress = await json(await headless(`/v1/headless/customer/addresses/${addressId}`, lease.publishableKey, {
+    method: 'PATCH',
+    headers: { 'x-customer-token': login.data.token },
+    body: JSON.stringify({ address2: 'Suite E2E' }),
+  }), 200);
+  if (updatedAddress.data.address.address2 !== 'Suite E2E') {
+    throw new Error('Address update was not returned');
+  }
+  const secondAddress = await json(await headless('/v1/headless/customer/addresses', lease.publishableKey, {
+    method: 'POST',
+    headers: { 'x-customer-token': login.data.token },
+    body: JSON.stringify({
+      firstName: 'Synthetic',
+      lastName: 'Customer',
+      address1: '2 Fixture Way',
+      city: 'Burnaby',
+      province: 'BC',
+      country: 'CA',
+      zip: 'V5H2N2',
+    }),
+  }), 201);
+  const secondAddressId = secondAddress.data.address.id;
+  const madeDefault = await json(await headless(`/v1/headless/customer/addresses/${secondAddressId}/default`, lease.publishableKey, {
+    method: 'POST',
+    headers: { 'x-customer-token': login.data.token },
+  }), 200);
+  if (madeDefault.data.address.isDefault !== true) throw new Error('Second address was not made default');
+  const addresses = await json(await headless('/v1/headless/customer/addresses', lease.publishableKey, {
+    headers: { 'x-customer-token': login.data.token },
+  }), 200);
+  if (!addresses.data.addresses.some((address) => address.id === addressId)) {
+    throw new Error('Created address was not listed');
+  }
+  if (addresses.data.addresses[0]?.id !== secondAddressId) throw new Error('Default address was not listed first');
+
+  const orders = await json(await headless('/v1/headless/customer/orders', lease.publishableKey, {
+    headers: { 'x-customer-token': login.data.token },
+  }), 200);
+  if (!Array.isArray(orders.data.data)) throw new Error('Customer order history did not return a collection');
+  const returns = await json(await headless('/v1/headless/customer/returns', lease.publishableKey, {
+    headers: { 'x-customer-token': login.data.token },
+  }), 200);
+  if (!Array.isArray(returns.data.returns)) throw new Error('Customer return history did not return a collection');
+
+  await json(await headless(`/v1/headless/customer/addresses/${addressId}`, lease.publishableKey, {
+    method: 'DELETE',
+    headers: { 'x-customer-token': login.data.token },
+  }), 200);
+  await json(await headless(`/v1/headless/customer/addresses/${secondAddressId}`, lease.publishableKey, {
+    method: 'DELETE',
     headers: { 'x-customer-token': login.data.token },
   }), 200);
 

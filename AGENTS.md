@@ -29,7 +29,7 @@ This is the framework-neutral TypeScript wire client for 1Ecomm headless commerc
 
 ## Verification
 
-Run `rm -rf node_modules && npm ci`, `npm run check`, then `npm run test:live` only against the maintained sandbox. A new contract shape needs a unit/contract fixture that is seen failing before the fix. Never point tests at production shopper data or silently skip live prerequisites in CI.
+Run `rm -rf node_modules && npm ci`, `npm run check`, then `npm run test:live` only against the maintained sandbox. For customer-account changes, also dispatch `.github/workflows/customer-session-live.yml`; it is the authoritative isolated customer/cart/address/session gate. A new contract shape needs a unit/contract fixture that is seen failing before the fix. Never point tests at production shopper data or silently skip live prerequisites in CI.
 
 Update README/security/testing docs whenever behavior changes. State “implemented and locally tested” separately from “deployed and live-proven.”
 
