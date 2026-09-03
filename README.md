@@ -38,4 +38,4 @@ For order placement, create one intent key and keep using that same key if the r
 
 ## Preview limits
 
-This preview does not collect card or wallet payments, capture or refund money, merge a signed-in customer's cart, or deliver webhooks. See [architecture](docs/architecture.md), [security](docs/security.md), and [testing](docs/testing.md) for the technical contract.
+This preview does not directly capture or refund money or merge a signed-in customer's cart. Hosted checkout handoff and signed outbound commerce events are platform capabilities. Verify receiver requests with `verifyWebhook`, keep the `whsec_` secret server-side, pass the exact unparsed body, and supply an atomic `WebhookReplayStore` backed by a unique delivery-ID constraint before side effects. See [architecture](docs/architecture.md), [security](docs/security.md), and [testing](docs/testing.md).

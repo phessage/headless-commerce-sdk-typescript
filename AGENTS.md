@@ -4,7 +4,7 @@ This file is the authority for AI-assisted work in this repository. Read it, `RE
 
 ## Purpose and boundary
 
-This is the framework-neutral TypeScript wire client for the 1Ecomm headless preview. It is not a storefront and must not invent commerce decisions. Canonical HTTP truth is `phessage/ecommerce-service/contracts/headless-commerce-v1.openapi.yaml`; verify that file and deployed behavior before changing a route, field or status. Current scope is store bootstrap, public catalog, anonymous cart, checkout preparation, capability-gated non-hosted order placement, and guest order lookup. Hosted payment, capture/refund, accounts and webhooks are not implemented here.
+This is the framework-neutral TypeScript wire client for 1Ecomm headless commerce. It is not a storefront and must not invent commerce decisions. Canonical HTTP truth is `phessage/ecommerce-service/contracts/headless-commerce-v1.openapi.yaml`; verify that file and deployed behavior before changing a route, field or status. Current scope is store bootstrap, public catalog, anonymous cart, checkout preparation, capability-gated order placement, guest order lookup, hosted checkout handoff and signed outbound webhook verification. Capture/refund and customer accounts are not public SDK operations.
 
 ## Contract rules
 
