@@ -229,6 +229,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/headless/customer/auth/password/recovery": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Request a non-enumerating customer password recovery email */
+        post: operations["requestHeadlessCustomerPasswordRecovery"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/headless/customer/auth/password/reset": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Consume a password recovery capability and set a new password */
+        post: operations["completeHeadlessCustomerPasswordRecovery"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/headless/customer/auth/otp/request": {
         parameters: {
             query?: never;
@@ -621,6 +655,32 @@ export interface components {
             /** Format: email */
             email: string;
             password: string;
+        };
+        CustomerPasswordRecoveryRequestInput: {
+            /** Format: email */
+            email: string;
+        };
+        CustomerPasswordRecoveryCompleteInput: {
+            /** Format: email */
+            email: string;
+            token: string;
+            newPassword: string;
+        };
+        CustomerPasswordRecoveryRequestResponse: {
+            data: {
+                /** @constant */
+                accepted: true;
+            };
+            /** Format: uuid */
+            requestId: string;
+        };
+        CustomerPasswordRecoveryCompleteResponse: {
+            data: {
+                /** @constant */
+                reset: true;
+            };
+            /** Format: uuid */
+            requestId: string;
         };
         CustomerOtpRequestInput: {
             /** @enum {unknown} */
@@ -1997,6 +2057,90 @@ export interface operations {
                 };
             };
             /** @description Invalid application or customer credentials */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HeadlessProblem"];
+                };
+            };
+            /** @description Unexpected or unlisted headless failure */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HeadlessProblem"];
+                };
+            };
+        };
+    };
+    requestHeadlessCustomerPasswordRecovery: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CustomerPasswordRecoveryRequestInput"];
+            };
+        };
+        responses: {
+            /** @description Recovery request accepted regardless of account existence */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CustomerPasswordRecoveryRequestResponse"];
+                };
+            };
+            /** @description Missing or invalid publishable key */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HeadlessProblem"];
+                };
+            };
+            /** @description Unexpected or unlisted headless failure */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HeadlessProblem"];
+                };
+            };
+        };
+    };
+    completeHeadlessCustomerPasswordRecovery: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CustomerPasswordRecoveryCompleteInput"];
+            };
+        };
+        responses: {
+            /** @description Password changed and recovery capability consumed */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CustomerPasswordRecoveryCompleteResponse"];
+                };
+            };
+            /** @description Invalid application or invalid, expired, consumed, or mismatched recovery capability */
             401: {
                 headers: {
                     [name: string]: unknown;
