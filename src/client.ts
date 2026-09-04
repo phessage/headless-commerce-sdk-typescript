@@ -1,4 +1,4 @@
-import type { AddCartItemInput, CartResponse, CategoryTreeResponse, CheckoutDetailsInput, CheckoutPreparationResponse, CreateCartResponse, ItemResponse, ListProductsInput, OrderLookupResponse, Page, PlaceOrderResponse, ProblemDetail, ProductSummary, CustomerAddressInput, CustomerAddressesResponse, CustomerAuthConfigResponse, CustomerCartMergeResponse, CustomerOrderQuery, CustomerOrdersResponse, CustomerProfileResponse, CustomerReturnsResponse, CustomerSessionResponse, CreateReturnInput } from './types.js';
+import type { AddCartItemInput, CartResponse, CategoryTreeResponse, CheckoutDetailsInput, CheckoutPreparationResponse, CreateCartResponse, ItemResponse, ListProductsInput, OrderLookupResponse, Page, PlaceOrderResponse, ProblemDetail, ProductSummary, CustomerAddressInput, CustomerAddressResponse, CustomerAddressesResponse, CustomerAddressDeleteResponse, CustomerAuthConfigResponse, CustomerAuthenticationResponse, CustomerCartMergeResponse, CustomerOrderCancellationResponse, CustomerOrderQuery, CustomerOrderResponse, CustomerOrdersResponse, CustomerOtpRequestResponse, CustomerProfileResponse, CustomerProfileUpdateInput, CustomerReturnResponse, CustomerReturnsResponse, CustomerSessionResponse, CustomerLogoutResponse, CreateReturnInput } from './types.js';
 
 export class CommerceApiError extends Error {
   constructor(public readonly problem: ProblemDetail, public readonly rateLimit: RateLimitDiagnostics) { super(problem.detail ?? problem.title); this.name = 'CommerceApiError'; }
@@ -25,27 +25,27 @@ export class HeadlessCommerceClient {
   };
   readonly customer: {
     authConfig: (signal?: AbortSignal) => Promise<CustomerAuthConfigResponse>;
-    login: (email: string, password: string, cartToken?: string, signal?: AbortSignal) => Promise<CustomerSessionResponse>;
-    requestOtp: (channel: 'email' | 'sms', destination: string, region?: string, signal?: AbortSignal) => Promise<ItemResponse<Record<string, unknown>>>;
-    verifyOtp: (input: { channel: 'email' | 'sms'; destination: string; code: string; region?: string; firstName?: string; lastName?: string }, cartToken?: string, signal?: AbortSignal) => Promise<CustomerSessionResponse>;
-    socialLogin: (provider: 'google' | 'apple', idToken: string, cartToken?: string, signal?: AbortSignal) => Promise<CustomerSessionResponse>;
+    login: (email: string, password: string, cartToken?: string, signal?: AbortSignal) => Promise<CustomerAuthenticationResponse>;
+    requestOtp: (channel: 'email' | 'sms', destination: string, region?: string, signal?: AbortSignal) => Promise<CustomerOtpRequestResponse>;
+    verifyOtp: (input: { channel: 'email' | 'sms'; destination: string; code: string; region?: string; firstName?: string; lastName?: string }, cartToken?: string, signal?: AbortSignal) => Promise<CustomerAuthenticationResponse>;
+    socialLogin: (provider: 'google' | 'apple', idToken: string, cartToken?: string, signal?: AbortSignal) => Promise<CustomerAuthenticationResponse>;
     refresh: (refreshToken: string, signal?: AbortSignal) => Promise<CustomerSessionResponse>;
-    logout: (refreshToken: string, signal?: AbortSignal) => Promise<ItemResponse<{ loggedOut: true }>>;
+    logout: (refreshToken: string, signal?: AbortSignal) => Promise<CustomerLogoutResponse>;
     profile: (token: string, signal?: AbortSignal) => Promise<CustomerProfileResponse>;
-    updateProfile: (token: string, input: Partial<{ firstName: string; lastName: string; phone: string }>, signal?: AbortSignal) => Promise<CustomerProfileResponse>;
+    updateProfile: (token: string, input: CustomerProfileUpdateInput, signal?: AbortSignal) => Promise<CustomerProfileResponse>;
     mergeCart: (token: string, cartToken: string, signal?: AbortSignal) => Promise<CustomerCartMergeResponse>;
     addresses: (token: string, signal?: AbortSignal) => Promise<CustomerAddressesResponse>;
-    createAddress: (token: string, input: CustomerAddressInput, signal?: AbortSignal) => Promise<ItemResponse<Record<string, unknown>>>;
-    updateAddress: (token: string, id: string, input: Partial<CustomerAddressInput>, signal?: AbortSignal) => Promise<ItemResponse<Record<string, unknown>>>;
-    deleteAddress: (token: string, id: string, signal?: AbortSignal) => Promise<ItemResponse<{ deleted: true }>>;
-    setDefaultAddress: (token: string, id: string, signal?: AbortSignal) => Promise<ItemResponse<Record<string, unknown>>>;
+    createAddress: (token: string, input: CustomerAddressInput, signal?: AbortSignal) => Promise<CustomerAddressResponse>;
+    updateAddress: (token: string, id: string, input: Partial<CustomerAddressInput>, signal?: AbortSignal) => Promise<CustomerAddressResponse>;
+    deleteAddress: (token: string, id: string, signal?: AbortSignal) => Promise<CustomerAddressDeleteResponse>;
+    setDefaultAddress: (token: string, id: string, signal?: AbortSignal) => Promise<CustomerAddressResponse>;
     orders: (token: string, input?: CustomerOrderQuery) => Promise<CustomerOrdersResponse>;
-    order: (token: string, id: string, signal?: AbortSignal) => Promise<ItemResponse<Record<string, unknown>>>;
-    cancelOrder: (token: string, id: string, reason: string, signal?: AbortSignal) => Promise<ItemResponse<Record<string, unknown>>>;
+    order: (token: string, id: string, signal?: AbortSignal) => Promise<CustomerOrderResponse>;
+    cancelOrder: (token: string, id: string, reason: string, signal?: AbortSignal) => Promise<CustomerOrderCancellationResponse>;
     returns: (token: string, signal?: AbortSignal) => Promise<CustomerReturnsResponse>;
     orderReturns: (token: string, orderId: string, signal?: AbortSignal) => Promise<CustomerReturnsResponse>;
-    createReturn: (token: string, orderId: string, input: CreateReturnInput, signal?: AbortSignal) => Promise<ItemResponse<Record<string, unknown>>>;
-    cancelReturn: (token: string, id: string, signal?: AbortSignal) => Promise<ItemResponse<Record<string, unknown>>>;
+    createReturn: (token: string, orderId: string, input: CreateReturnInput, signal?: AbortSignal) => Promise<CustomerReturnResponse>;
+    cancelReturn: (token: string, id: string, signal?: AbortSignal) => Promise<CustomerReturnResponse>;
   };
   private readonly fetcher: typeof globalThis.fetch;
   static async forStore(options: StoreClientOptions): Promise<HeadlessCommerceClient> {

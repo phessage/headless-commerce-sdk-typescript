@@ -12,6 +12,32 @@ const json = async (response, expected) => {
   }
   return body;
 };
+const assertExactKeys = (value, expected, label) => {
+  const actual = Object.keys(value).sort();
+  const wanted = [...expected].sort();
+  if (JSON.stringify(actual) !== JSON.stringify(wanted)) {
+    throw new Error(`${label} keys drifted: expected ${wanted.join(', ')}, got ${actual.join(', ')}`);
+  }
+};
+const problem = async (response, expectedStatus, expectedCode) => {
+  const contentType = response.headers.get('content-type') || '';
+  const body = await json(response, expectedStatus);
+  if (!contentType.includes('application/problem+json')) {
+    throw new Error(`Expected application/problem+json, got ${contentType || 'no content type'}`);
+  }
+  for (const key of ['type', 'title', 'status', 'requestId', 'code']) {
+    if (body[key] === undefined || body[key] === null || body[key] === '') {
+      throw new Error(`Problem response omitted required ${key}: ${JSON.stringify(body)}`);
+    }
+  }
+  if (body.status !== expectedStatus || body.code !== expectedCode) {
+    throw new Error(`Unexpected problem identity: ${JSON.stringify(body)}`);
+  }
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(body.requestId)) {
+    throw new Error(`Problem requestId is not a UUID: ${body.requestId}`);
+  }
+  return body;
+};
 const headless = (path, key, init = {}) => fetch(`${apiUrl}${path}`, {
   ...init,
   headers: {
@@ -56,6 +82,10 @@ try {
   if (login.data.expiresIn !== 900 || !login.data.token || !login.data.refreshToken) {
     throw new Error('Login did not return a complete short-lived session');
   }
+  assertExactKeys(login.data, ['token', 'refreshToken', 'expiresIn', 'customer', 'cartInfo'], 'Customer authentication');
+  assertExactKeys(login.data.customer, ['id', 'email', 'firstName', 'lastName', 'phone', 'avatarUrl', 'emailVerified'], 'Customer profile');
+  assertExactKeys(login.data.cartInfo, ['hasAnonymousCart', 'hasCustomerCart', 'anonymousCartItemCount', 'customerCartItemCount', 'requiresMergeDecision'], 'Customer cart summary');
+  await problem(await headless('/v1/headless/customer/me', lease.publishableKey), 401, 'HEADLESS_HTTP_401');
   await json(await headless('/v1/headless/customer/me', lease.publishableKey, {
     headers: { 'x-customer-token': login.data.token },
   }), 200);
@@ -218,10 +248,10 @@ try {
     method: 'POST',
     body: JSON.stringify({ refreshToken: login.data.refreshToken }),
   }), 200);
-  await json(await headless('/v1/headless/customer/auth/refresh', lease.publishableKey, {
+  await problem(await headless('/v1/headless/customer/auth/refresh', lease.publishableKey, {
     method: 'POST',
     body: JSON.stringify({ refreshToken: login.data.refreshToken }),
-  }), 401);
+  }), 401, 'HEADLESS_HTTP_401');
   await json(await headless('/v1/headless/customer/me', lease.publishableKey, {
     headers: { 'x-customer-token': rotated.data.token },
   }), 200);
@@ -230,10 +260,10 @@ try {
     method: 'POST',
     body: JSON.stringify({ refreshToken: rotated.data.refreshToken }),
   }), 200);
-  await json(await headless('/v1/headless/customer/auth/refresh', lease.publishableKey, {
+  await problem(await headless('/v1/headless/customer/auth/refresh', lease.publishableKey, {
     method: 'POST',
     body: JSON.stringify({ refreshToken: rotated.data.refreshToken }),
-  }), 401);
+  }), 401, 'HEADLESS_HTTP_401');
   console.log(`Headless customer session live journey passed for lease ${lease.leaseId}`);
 } finally {
   if (lease?.leaseToken) {
