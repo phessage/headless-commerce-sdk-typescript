@@ -2688,7 +2688,9 @@ export interface operations {
     createHeadlessOrderReturn: {
         parameters: {
             query?: never;
-            header?: never;
+            header: {
+                "Idempotency-Key": string;
+            };
             path: {
                 orderId: string;
             };
@@ -2701,7 +2703,7 @@ export interface operations {
         };
         responses: {
             /** @description Created return request */
-            200: {
+            201: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -2720,6 +2722,15 @@ export interface operations {
             };
             /** @description Order not found or belongs to another customer */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HeadlessProblem"];
+                };
+            };
+            /** @description Idempotency key was already used with a different return request */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };

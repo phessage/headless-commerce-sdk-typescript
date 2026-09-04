@@ -44,7 +44,7 @@ export class HeadlessCommerceClient {
     cancelOrder: (token: string, id: string, reason: string, signal?: AbortSignal) => Promise<CustomerOrderCancellationResponse>;
     returns: (token: string, signal?: AbortSignal) => Promise<CustomerReturnsResponse>;
     orderReturns: (token: string, orderId: string, signal?: AbortSignal) => Promise<CustomerReturnsResponse>;
-    createReturn: (token: string, orderId: string, input: CreateReturnInput, signal?: AbortSignal) => Promise<CustomerReturnResponse>;
+    createReturn: (token: string, orderId: string, input: CreateReturnInput, idempotencyKey: string, signal?: AbortSignal) => Promise<CustomerReturnResponse>;
     cancelReturn: (token: string, id: string, signal?: AbortSignal) => Promise<CustomerReturnResponse>;
   };
   private readonly fetcher: typeof globalThis.fetch;
@@ -111,7 +111,13 @@ export class HeadlessCommerceClient {
       cancelOrder: (token, id, reason, signal) => customerRequest('POST', `/orders/${encodeURIComponent(id)}/cancel`, token, { reason }, undefined, signal),
       returns: (token, signal) => customerRequest('GET', '/returns', token, undefined, undefined, signal),
       orderReturns: (token, orderId, signal) => customerRequest('GET', `/orders/${encodeURIComponent(orderId)}/returns`, token, undefined, undefined, signal),
-      createReturn: (token, orderId, input, signal) => customerRequest('POST', `/orders/${encodeURIComponent(orderId)}/returns`, token, input, undefined, signal),
+      createReturn: (token, orderId, input, idempotencyKey, signal) => {
+        const key = idempotencyKey.trim();
+        if (!key || key.length > 120) throw new Error('idempotencyKey must be a non-empty string of at most 120 characters');
+        return this.request(customerUrl(`/orders/${encodeURIComponent(orderId)}/returns`), signal, {
+          method: 'POST', body: input, customerToken: token, idempotencyKey: key, retry: false,
+        });
+      },
       cancelReturn: (token, id, signal) => customerRequest('POST', `/returns/${encodeURIComponent(id)}/cancel`, token, undefined, undefined, signal),
     };
   }

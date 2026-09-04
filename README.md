@@ -44,4 +44,6 @@ For order placement, create one intent key and keep using that same key if the r
 
 ## Preview limits
 
+Return creation requires a stable, caller-owned 1–120 character intent key. An identical retry returns the original RMA; reusing that key for changed return details fails with HTTP 409.
+
 The `customer` client covers auth configuration, password/OTP/native social sign-in, refresh/logout, profile, cart merge, addresses, customer orders/cancellation and returns. Access tokens last 15 minutes; persist the replacement refresh capability after every refresh and clear both credentials on logout. This preview does not directly capture or initiate refunds. Hosted checkout handoff and signed outbound commerce events are platform capabilities. Verify receiver requests with `verifyWebhook`, keep the `whsec_` secret server-side, pass the exact unparsed body, and supply an atomic `WebhookReplayStore` backed by a unique delivery-ID constraint before side effects. See [architecture](docs/architecture.md), [security](docs/security.md), and [testing](docs/testing.md).

@@ -235,12 +235,21 @@ try {
   }), 200);
   if (!Array.isArray(returns.data.returns)) throw new Error('Customer return history did not return a collection');
   if (!lease.returnOrder?.id || !lease.returnOrder?.itemId) throw new Error('Fixture did not provide an eligible return order');
+  const returnIntent = `customer-return:${process.env.GITHUB_RUN_ID || randomUUID()}`;
+  const returnInput = { reason: 'not_as_expected', items: [{ orderItemId: lease.returnOrder.itemId, quantity: lease.returnOrder.quantity, resolution: 'refund' }] };
   const createdReturn = await json(await headless(`/v1/headless/customer/orders/${lease.returnOrder.id}/returns`, lease.publishableKey, {
-    method: 'POST', headers: { 'x-customer-token': login.data.token },
-    body: JSON.stringify({ reason: 'not_as_expected', items: [{ orderItemId: lease.returnOrder.itemId, quantity: lease.returnOrder.quantity, resolution: 'refund' }] }),
+    method: 'POST', headers: { 'x-customer-token': login.data.token, 'Idempotency-Key': returnIntent },
+    body: JSON.stringify(returnInput),
   }), 201);
   const returnRequest = createdReturn.data.return;
   if (!returnRequest?.id || returnRequest.orderId !== lease.returnOrder.id || returnRequest.status !== 'requested') throw new Error('Return creation projection drifted');
+  const replayedReturn = await json(await headless(`/v1/headless/customer/orders/${lease.returnOrder.id}/returns`, lease.publishableKey, {
+    method: 'POST', headers: { 'x-customer-token': login.data.token, 'Idempotency-Key': returnIntent }, body: JSON.stringify(returnInput),
+  }), 201);
+  if (replayedReturn.data.return?.id !== returnRequest.id) throw new Error('Return creation did not replay the original request');
+  await problem(await headless(`/v1/headless/customer/orders/${lease.returnOrder.id}/returns`, lease.publishableKey, {
+    method: 'POST', headers: { 'x-customer-token': login.data.token, 'Idempotency-Key': returnIntent }, body: JSON.stringify({ ...returnInput, note: 'different intent' }),
+  }), 409, 'HEADLESS_HTTP_409');
   const orderReturns = await json(await headless(`/v1/headless/customer/orders/${lease.returnOrder.id}/returns`, lease.publishableKey, {
     headers: { 'x-customer-token': login.data.token },
   }), 200);
