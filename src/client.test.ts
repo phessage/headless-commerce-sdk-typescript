@@ -113,6 +113,20 @@ describe('HeadlessCommerceClient', () => {
     expect(fetcher.mock.calls[5][1]?.headers).toMatchObject({'Idempotency-Key':'return-intent-1'});
     expect(fetcher.mock.calls[4][0].toString()).toContain('page=2&limit=10&status=pending');
   });
+
+  it('supports browser and mobile OAuth authorization-code exchange', async () => {
+    const fetcher = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ data: {} }), headers: new Headers() });
+    const client = new HeadlessCommerceClient({ baseUrl: 'https://api.example', publishableKey: 'pk_test', fetch: fetcher });
+    await client.customer.authorizeOAuth('google', {
+      redirectUri: 'https://shop.example/auth/callback', codeChallenge: 'x'.repeat(43), state: 'screen=checkout',
+    });
+    await client.customer.exchangeOAuth({
+      code: 'a'.repeat(64), codeVerifier: 'v'.repeat(43), redirectUri: 'https://shop.example/auth/callback',
+    }, 'hc_cart');
+    expect(fetcher.mock.calls[0][0].pathname).toBe('/v1/headless/customer/auth/oauth/google/authorize');
+    expect(fetcher.mock.calls[1][0].pathname).toBe('/v1/headless/customer/auth/oauth/token');
+    expect(fetcher.mock.calls[1][1]?.headers).toMatchObject({ 'x-cart-token': 'hc_cart' });
+  });
   it('rejects an invalid return intent key before making a request', () => {
     const fetcher = vi.fn();
     const client = new HeadlessCommerceClient({baseUrl:'https://sandbox.test',publishableKey:'pk_test_demo',fetch:fetcher});

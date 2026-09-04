@@ -62,3 +62,17 @@ export type CustomerOrderResponse = Schema<'CustomerOrderDetailResponse'>;
 export type CustomerOrderCancellationResponse = Schema<'CustomerOrderCancellationResponse'>;
 export type CustomerReturnsResponse = Schema<'CustomerReturnListResponse'>;
 export type CustomerReturnResponse = Schema<'CustomerReturnResponse'>;
+export interface CustomerOAuthAuthorizationResponse {
+  data: { authorizationUrl: string; expiresIn: number };
+  requestId: string;
+}
+export interface CustomerOAuthAuthorizationInput {
+  redirectUri: string;
+  codeChallenge: string;
+  state?: string;
+}
+export interface CustomerOAuthTokenInput {
+  code: string;
+  codeVerifier: string;
+  redirectUri: string;
+}

@@ -1,4 +1,4 @@
-import type { AddCartItemInput, CartResponse, CategoryTreeResponse, CheckoutDetailsInput, CheckoutPreparationResponse, CreateCartResponse, ItemResponse, ListProductsInput, OrderLookupResponse, Page, PlaceOrderResponse, ProblemDetail, ProductSummary, CustomerAddressInput, CustomerAddressResponse, CustomerAddressesResponse, CustomerAddressDeleteResponse, CustomerAuthConfigResponse, CustomerAuthenticationResponse, CustomerCartMergeResponse, CustomerOrderCancellationResponse, CustomerOrderQuery, CustomerOrderResponse, CustomerOrdersResponse, CustomerOtpRequestResponse, CustomerProfileResponse, CustomerProfileUpdateInput, CustomerReturnResponse, CustomerReturnsResponse, CustomerSessionResponse, CustomerLogoutResponse, CreateReturnInput } from './types.js';
+import type { AddCartItemInput, CartResponse, CategoryTreeResponse, CheckoutDetailsInput, CheckoutPreparationResponse, CreateCartResponse, ItemResponse, ListProductsInput, OrderLookupResponse, Page, PlaceOrderResponse, ProblemDetail, ProductSummary, CustomerAddressInput, CustomerAddressResponse, CustomerAddressesResponse, CustomerAddressDeleteResponse, CustomerAuthConfigResponse, CustomerAuthenticationResponse, CustomerCartMergeResponse, CustomerOrderCancellationResponse, CustomerOrderQuery, CustomerOrderResponse, CustomerOrdersResponse, CustomerOtpRequestResponse, CustomerProfileResponse, CustomerProfileUpdateInput, CustomerReturnResponse, CustomerReturnsResponse, CustomerSessionResponse, CustomerLogoutResponse, CreateReturnInput, CustomerOAuthAuthorizationInput, CustomerOAuthAuthorizationResponse, CustomerOAuthTokenInput } from './types.js';
 
 export class CommerceApiError extends Error {
   constructor(public readonly problem: ProblemDetail, public readonly rateLimit: RateLimitDiagnostics) { super(problem.detail ?? problem.title); this.name = 'CommerceApiError'; }
@@ -29,6 +29,8 @@ export class HeadlessCommerceClient {
     requestOtp: (channel: 'email' | 'sms', destination: string, region?: string, signal?: AbortSignal) => Promise<CustomerOtpRequestResponse>;
     verifyOtp: (input: { channel: 'email' | 'sms'; destination: string; code: string; region?: string; firstName?: string; lastName?: string }, cartToken?: string, signal?: AbortSignal) => Promise<CustomerAuthenticationResponse>;
     socialLogin: (provider: 'google' | 'apple', idToken: string, cartToken?: string, signal?: AbortSignal) => Promise<CustomerAuthenticationResponse>;
+    authorizeOAuth: (provider: 'google' | 'apple', input: CustomerOAuthAuthorizationInput, signal?: AbortSignal) => Promise<CustomerOAuthAuthorizationResponse>;
+    exchangeOAuth: (input: CustomerOAuthTokenInput, cartToken?: string, signal?: AbortSignal) => Promise<CustomerAuthenticationResponse>;
     refresh: (refreshToken: string, signal?: AbortSignal) => Promise<CustomerSessionResponse>;
     logout: (refreshToken: string, signal?: AbortSignal) => Promise<CustomerLogoutResponse>;
     profile: (token: string, signal?: AbortSignal) => Promise<CustomerProfileResponse>;
@@ -96,6 +98,8 @@ export class HeadlessCommerceClient {
       requestOtp: (channel, destination, region, signal) => customerRequest('POST', '/auth/otp/request', undefined, { channel, destination, ...(region ? { region } : {}) }, undefined, signal),
       verifyOtp: (input, cartToken, signal) => customerRequest('POST', '/auth/otp/verify', undefined, input, cartToken, signal),
       socialLogin: (provider, idToken, cartToken, signal) => customerRequest('POST', `/auth/social/${provider}`, undefined, { idToken }, cartToken, signal),
+      authorizeOAuth: (provider, input, signal) => customerRequest('POST', `/auth/oauth/${provider}/authorize`, undefined, input, undefined, signal),
+      exchangeOAuth: (input, cartToken, signal) => customerRequest('POST', '/auth/oauth/token', undefined, input, cartToken, signal),
       refresh: (refreshToken, signal) => customerRequest('POST', '/auth/refresh', undefined, { refreshToken }, undefined, signal),
       logout: (refreshToken, signal) => customerRequest('POST', '/auth/logout', undefined, { refreshToken }, undefined, signal),
       profile: (token, signal) => customerRequest('GET', '/me', token, undefined, undefined, signal),
