@@ -1,4 +1,4 @@
-import type { AddCartItemInput, CartResponse, CategoryTreeResponse, CheckoutDetailsInput, CheckoutPreparationResponse, CreateCartResponse, ItemResponse, ListProductsInput, OrderLookupResponse, Page, PlaceOrderResponse, ProblemDetail, ProductSummary, CustomerAddressInput, CustomerAddressResponse, CustomerAddressesResponse, CustomerAddressDeleteResponse, CustomerAuthConfigResponse, CustomerAuthenticationResponse, CustomerCartMergeResponse, CustomerOrderCancellationResponse, CustomerOrderQuery, CustomerOrderResponse, CustomerOrdersResponse, CustomerOtpRequestResponse, CustomerProfileResponse, CustomerProfileUpdateInput, CustomerReturnResponse, CustomerReturnsResponse, CustomerSessionResponse, CustomerLogoutResponse, CreateReturnInput, CustomerOAuthAuthorizationInput, CustomerOAuthAuthorizationResponse, CustomerOAuthTokenInput } from './types.js';
+import type { AddCartItemInput, CartResponse, CategoryTreeResponse, CheckoutDetailsInput, CheckoutPreparationResponse, CreateCartResponse, ItemResponse, ListProductsInput, OrderLookupResponse, Page, PlaceOrderResponse, ProblemDetail, ProductSummary, CustomerAddressInput, CustomerAddressResponse, CustomerAddressesResponse, CustomerAddressDeleteResponse, CustomerAuthConfigResponse, CustomerAuthenticationResponse, CustomerCartMergeResponse, CustomerOrderCancellationResponse, CustomerOrderQuery, CustomerOrderResponse, CustomerOrdersResponse, CustomerOtpRequestResponse, CustomerProfileResponse, CustomerProfileUpdateInput, CustomerReturnResponse, CustomerReturnsResponse, CustomerSessionResponse, CustomerLogoutResponse, CustomerPasswordRecoveryRequestResponse, CustomerPasswordRecoveryCompleteResponse, CreateReturnInput, CustomerOAuthAuthorizationInput, CustomerOAuthAuthorizationResponse, CustomerOAuthTokenInput } from './types.js';
 
 export class CommerceApiError extends Error {
   constructor(public readonly problem: ProblemDetail, public readonly rateLimit: RateLimitDiagnostics) { super(problem.detail ?? problem.title); this.name = 'CommerceApiError'; }
@@ -26,6 +26,8 @@ export class HeadlessCommerceClient {
   readonly customer: {
     authConfig: (signal?: AbortSignal) => Promise<CustomerAuthConfigResponse>;
     login: (email: string, password: string, cartToken?: string, signal?: AbortSignal) => Promise<CustomerAuthenticationResponse>;
+    requestPasswordRecovery: (email: string, signal?: AbortSignal) => Promise<CustomerPasswordRecoveryRequestResponse>;
+    resetPassword: (email: string, token: string, newPassword: string, signal?: AbortSignal) => Promise<CustomerPasswordRecoveryCompleteResponse>;
     requestOtp: (channel: 'email' | 'sms', destination: string, region?: string, signal?: AbortSignal) => Promise<CustomerOtpRequestResponse>;
     verifyOtp: (input: { channel: 'email' | 'sms'; destination: string; code: string; region?: string; firstName?: string; lastName?: string }, cartToken?: string, signal?: AbortSignal) => Promise<CustomerAuthenticationResponse>;
     socialLogin: (provider: 'google' | 'apple', idToken: string, cartToken?: string, signal?: AbortSignal) => Promise<CustomerAuthenticationResponse>;
@@ -95,6 +97,8 @@ export class HeadlessCommerceClient {
     this.customer = {
       authConfig: (signal) => customerRequest('GET', '/auth/config', undefined, undefined, undefined, signal),
       login: (email, password, cartToken, signal) => customerRequest('POST', '/auth/login', undefined, { email, password }, cartToken, signal),
+      requestPasswordRecovery: (email, signal) => customerRequest('POST', '/auth/password/recovery', undefined, { email }, undefined, signal),
+      resetPassword: (email, token, newPassword, signal) => customerRequest('POST', '/auth/password/reset', undefined, { email, token, newPassword }, undefined, signal),
       requestOtp: (channel, destination, region, signal) => customerRequest('POST', '/auth/otp/request', undefined, { channel, destination, ...(region ? { region } : {}) }, undefined, signal),
       verifyOtp: (input, cartToken, signal) => customerRequest('POST', '/auth/otp/verify', undefined, input, cartToken, signal),
       socialLogin: (provider, idToken, cartToken, signal) => customerRequest('POST', `/auth/social/${provider}`, undefined, { idToken }, cartToken, signal),
