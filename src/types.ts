@@ -2,7 +2,14 @@ export interface Money { amount: string; currency: string }
 export interface ProductSummary { id: string; slug: string; name: string; description: string; imageUrl: string; price: Money; available: boolean }
 export interface Page<T> { data: T[]; nextCursor: string | null; requestId: string }
 export interface ListProductsInput { limit?: number; cursor?: string; query?: string; signal?: AbortSignal }
-export interface ProblemDetail { type: string; title: string; status: number; detail?: string; instance?: string; requestId?: string }
+import type { components } from './generated/headless-contract.js';
+
+type Schema<Name extends keyof components['schemas']> = components['schemas'][Name];
+
+/** Exact RFC 9457 error contract returned by the 1Ecomm origin. */
+export type HeadlessProblem = Schema<'HeadlessProblem'>;
+/** Error shape exposed by the client. Origin fields are exact; requestId/code are optional only for non-1Ecomm proxy failures. */
+export type ProblemDetail = Omit<HeadlessProblem, 'requestId' | 'code'> & Pick<Partial<HeadlessProblem>, 'requestId' | 'code'>;
 export interface ItemResponse<T> { data: T; requestId: string }
 export interface Category { id: string; slug: string; name: string; description: string; imageUrl: string; children: Category[] }
 export interface CategoryTreeResponse { data: Category[]; requestId: string }
@@ -25,20 +32,33 @@ export interface PlaceOrderResponse { data: OrderConfirmation; requestId: string
 export interface GuestOrderItem { productName: string; variantName: string | null; quantity: number; unitPrice: string | number; totalPrice: string | number; fulfillmentStatus: string | null; backordered: boolean; backorderedQuantity: number; isPreorder: boolean; expectedShipDate: string | null; estimatedDeliveryDate: string | null }
 export interface GuestOrder { id: string; orderNumber: string; status: string; paymentStatus: string; createdAt: string; currency: string; subtotal: string | number; taxAmount: string | number; shippingAmount: string | number; discountAmount: string | number; total: string | number; shippingAddress: Record<string, unknown> | null; items: GuestOrderItem[]; tracking: Record<string, unknown> | null }
 export interface OrderLookupResponse { data: GuestOrder; requestId: string }
-export interface CustomerSession { token: string; refreshToken: string; expiresIn: 900; customer?: CustomerProfile; cartInfo?: Record<string, unknown> }
-export interface CustomerProfile { id: string; email: string; firstName?: string | null; lastName?: string | null; phone?: string | null; [key: string]: unknown }
-export interface CustomerAddress { id: string; firstName: string; lastName: string; company?: string | null; address1: string; address2?: string | null; city: string; province: string; country: string; zip: string; phone?: string | null; isDefault?: boolean }
-export interface CustomerAddressInput { firstName: string; lastName: string; company?: string; address1: string; address2?: string; city: string; province: string; country: string; zip: string; phone?: string; setDefault?: boolean }
-export interface CustomerCartMerge { merged: boolean; cartId: string | null; cartToken: string | null }
-export interface CustomerOrderItem { id: string; productName: string; variantName: string | null; quantity: number; unitPrice: string | number; totalPrice: string | number; fulfillmentStatus: string | null; fulfilledQuantity: number; backordered: boolean; expectedShipDate: string | null; estimatedDeliveryDate: string | null }
-export interface CustomerOrder { id: string; orderNumber: string; status: string; paymentStatus: string; createdAt: string; currency: string; subtotal: string | number; taxAmount: string | number; shippingAmount: string | number; discountAmount: string | number; total: string | number; items: CustomerOrderItem[] }
+export type CustomerSession = Schema<'CustomerSession'>;
+export type CustomerAuthentication = Schema<'CustomerAuthentication'>;
+export type CustomerProfile = Schema<'CustomerProfile'>;
+export type CustomerAddress = Schema<'CustomerAddress'>;
+export type CustomerAddressInput = Schema<'CustomerAddressInput'>;
+export type CustomerProfileUpdateInput = Schema<'CustomerProfileUpdateInput'>;
+export type CustomerCartMerge = Schema<'CustomerCartMergeResponse'>['data'];
+export type CustomerOrderItem = Schema<'CustomerOrderItem'>;
+export type CustomerOrder = Schema<'CustomerOrder'>;
+export type CustomerReturn = Schema<'CustomerReturn'>;
+export type CustomerReturnItem = Schema<'CustomerReturnItem'>;
+export type CustomerOtpRequestResult = Schema<'CustomerOtpRequestResult'>;
 export interface CustomerOrderQuery { page?: number; limit?: number; status?: string; signal?: AbortSignal }
-export interface ReturnItemInput { orderItemId: string; quantity: number; reason?: string; resolution?: 'refund' | 'replacement' | 'store_credit' }
-export interface CreateReturnInput { reason?: string; note?: string; items: ReturnItemInput[] }
-export interface CustomerAuthConfigResponse extends ItemResponse<Record<string, unknown>> {}
-export interface CustomerSessionResponse extends ItemResponse<CustomerSession> {}
-export interface CustomerProfileResponse extends ItemResponse<CustomerProfile> {}
-export interface CustomerCartMergeResponse extends ItemResponse<CustomerCartMerge> {}
-export interface CustomerAddressesResponse extends ItemResponse<{ addresses: CustomerAddress[] }> {}
-export interface CustomerOrdersResponse extends ItemResponse<{ data: CustomerOrder[]; total: number; page: number; limit: number; totalPages?: number }> {}
-export interface CustomerReturnsResponse extends ItemResponse<{ returns: Record<string, unknown>[] }> {}
+export type CreateReturnInput = Schema<'CreateReturnInput'>;
+export type ReturnItemInput = CreateReturnInput['items'][number];
+export type CustomerAuthConfigResponse = Schema<'CustomerAuthConfigResponse'>;
+export type CustomerOtpRequestResponse = Schema<'CustomerOtpRequestResponse'>;
+export type CustomerAuthenticationResponse = Schema<'CustomerAuthenticationResponse'>;
+export type CustomerSessionResponse = Schema<'CustomerSessionResponse'>;
+export type CustomerLogoutResponse = Schema<'CustomerLogoutResponse'>;
+export type CustomerProfileResponse = Schema<'CustomerProfileResponse'>;
+export type CustomerCartMergeResponse = Schema<'CustomerCartMergeResponse'>;
+export type CustomerAddressResponse = Schema<'CustomerAddressResponse'>;
+export type CustomerAddressesResponse = Schema<'CustomerAddressListResponse'>;
+export type CustomerAddressDeleteResponse = Schema<'CustomerAddressDeleteResponse'>;
+export type CustomerOrdersResponse = Schema<'CustomerOrderPageResponse'>;
+export type CustomerOrderResponse = Schema<'CustomerOrderDetailResponse'>;
+export type CustomerOrderCancellationResponse = Schema<'CustomerOrderCancellationResponse'>;
+export type CustomerReturnsResponse = Schema<'CustomerReturnListResponse'>;
+export type CustomerReturnResponse = Schema<'CustomerReturnResponse'>;

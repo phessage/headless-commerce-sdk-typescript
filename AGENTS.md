@@ -6,6 +6,8 @@ This file is the authority for AI-assisted work in this repository. Read it, `RE
 
 This is the framework-neutral TypeScript wire client for 1Ecomm headless commerce. It is not a storefront and must not invent commerce decisions. Canonical HTTP truth is `phessage/ecommerce-service/contracts/headless-commerce-v1.openapi.yaml`; verify that file and deployed behavior before changing a route, field or status. Current scope includes customer authentication/session/profile/address/order/return operations alongside catalog, cart, checkout, order, hosted handoff and webhooks. Capture/refund initiation is not a public SDK operation.
 
+The reviewed contract snapshot is `contracts/headless-commerce-v1.openapi.yaml`; its digest and generated output must move together. Never hand-edit `src/generated/headless-contract.ts`. Run `npm run contract:generate`, review the source-contract diff and generated diff, update the SHA-256 only after that review, and require `npm run contract:check` to pass. Exact response bodies alias generated schemas; handwritten types are limited to ergonomic client inputs and resilience outside the origin boundary.
+
 ## Contract rules
 
 - `storeId` is the only onboarding value. `forStore` resolves `apiUrl` and a publishable key and must reject a mismatched store.
