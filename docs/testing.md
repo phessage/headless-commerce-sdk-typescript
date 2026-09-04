@@ -1,6 +1,6 @@
 # Testing
 
-The customer live gate proves return creation, identical same-key replay, changed-payload HTTP 409, collection reads and cancellation.
+The customer live gate proves return creation, identical same-key replay, changed-payload HTTP 409, collection reads and cancellation. It also proves that replaying a consumed refresh capability invalidates the replacement minted immediately before it.
 
 `npm run check` first verifies the recorded SHA-256 digests of the pinned OpenAPI snapshot and committed generated types, then performs a strict TypeScript build, transport tests and fixed-vector webhook verification tests. A changed snapshot must carry regenerated output and a reviewed two-file digest update in the same commit; generation remains explicit so ordinary CI does not depend on downloading a build tool.
 

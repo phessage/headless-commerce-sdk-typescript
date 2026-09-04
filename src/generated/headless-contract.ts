@@ -2024,7 +2024,7 @@ export interface operations {
                     "application/json": components["schemas"]["CustomerSessionResponse"];
                 };
             };
-            /** @description Invalid, expired, replayed, or cross-store refresh capability */
+            /** @description Invalid, expired, revoked, replayed, or cross-store refresh capability; replay of a consumed token revokes its refresh-token family */
             401: {
                 headers: {
                     [name: string]: unknown;
