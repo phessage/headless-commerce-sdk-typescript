@@ -102,7 +102,7 @@ describe('HeadlessCommerceClient', () => {
     await client.customer.login('buyer@example.test','password1','hc_cart'); await client.customer.refresh('a'.repeat(64));
     await client.customer.profile('customer-jwt'); await client.customer.mergeCart('customer-jwt','hc_cart');
     await client.customer.orders('customer-jwt',{page:2,limit:10,status:'pending'});
-    await client.customer.createReturn('customer-jwt','order/1',{items:[{orderItemId:'line-1',quantity:1}]});
+    await client.customer.createReturn('customer-jwt','order/1',{items:[{orderItemId:'line-1',quantity:1}]},'return-intent-1');
     expect(fetcher.mock.calls.map((call)=>[new URL(String(call[0])).pathname,call[1]?.method])).toEqual([
       ['/v1/headless/customer/auth/login','POST'], ['/v1/headless/customer/auth/refresh','POST'],
       ['/v1/headless/customer/me','GET'], ['/v1/headless/customer/cart/merge','POST'],
@@ -110,6 +110,13 @@ describe('HeadlessCommerceClient', () => {
     ]);
     expect(fetcher.mock.calls[0][1]?.headers).toMatchObject({'x-cart-token':'hc_cart'});
     expect(fetcher.mock.calls[2][1]?.headers).toMatchObject({'x-customer-token':'customer-jwt'});
+    expect(fetcher.mock.calls[5][1]?.headers).toMatchObject({'Idempotency-Key':'return-intent-1'});
     expect(fetcher.mock.calls[4][0].toString()).toContain('page=2&limit=10&status=pending');
+  });
+  it('rejects an invalid return intent key before making a request', () => {
+    const fetcher = vi.fn();
+    const client = new HeadlessCommerceClient({baseUrl:'https://sandbox.test',publishableKey:'pk_test_demo',fetch:fetcher});
+    expect(() => client.customer.createReturn('customer-jwt','order-1',{items:[{orderItemId:'line-1',quantity:1}]},' ')).toThrow('idempotencyKey');
+    expect(fetcher).not.toHaveBeenCalled();
   });
 });
