@@ -276,6 +276,10 @@ try {
     method: 'POST',
     body: JSON.stringify({ refreshToken: login.data.refreshToken }),
   }), 401, 'HEADLESS_HTTP_401');
+  await problem(await headless('/v1/headless/customer/auth/refresh', lease.publishableKey, {
+    method: 'POST',
+    body: JSON.stringify({ refreshToken: rotated.data.refreshToken }),
+  }), 401, 'HEADLESS_HTTP_401');
   await json(await headless('/v1/headless/customer/me', lease.publishableKey, {
     headers: { 'x-customer-token': rotated.data.token },
   }), 200);
