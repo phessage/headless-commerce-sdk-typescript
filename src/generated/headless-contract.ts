@@ -316,6 +316,42 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/headless/customer/auth/oauth/{provider}/authorize": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                provider: "google" | "apple";
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Begin browser or mobile customer authorization with PKCE */
+        post: operations["authorizeHeadlessCustomerOAuth"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/headless/customer/auth/oauth/token": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Exchange a one-time authorization code using its PKCE verifier */
+        post: operations["exchangeHeadlessCustomerOAuthCode"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/headless/customer/me": {
         parameters: {
             query?: never;
@@ -601,6 +637,26 @@ export interface components {
             idToken: string;
             firstName?: string;
             lastName?: string;
+        };
+        CustomerOAuthAuthorizeInput: {
+            redirectUri: string;
+            codeChallenge: string;
+            state: string;
+        };
+        CustomerOAuthTokenInput: {
+            code: string;
+            codeVerifier: string;
+            redirectUri: string;
+        };
+        CustomerOAuthAuthorizationResponse: {
+            data: {
+                /** Format: uri */
+                authorizationUrl: string;
+                /** @enum {integer} */
+                expiresIn: 600;
+            };
+            /** Format: uuid */
+            requestId: string;
         };
         CustomerRefreshInput: {
             refreshToken: string;
@@ -2163,6 +2219,92 @@ export interface operations {
             };
             /** @description Unsupported provider */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HeadlessProblem"];
+                };
+            };
+            /** @description Unexpected or unlisted headless failure */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HeadlessProblem"];
+                };
+            };
+        };
+    };
+    authorizeHeadlessCustomerOAuth: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                provider: "google" | "apple";
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CustomerOAuthAuthorizeInput"];
+            };
+        };
+        responses: {
+            /** @description Provider authorization URL backed by single-use state */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CustomerOAuthAuthorizationResponse"];
+                };
+            };
+            /** @description Provider unavailable or callback URI not registered */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HeadlessProblem"];
+                };
+            };
+            /** @description Unexpected or unlisted headless failure */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HeadlessProblem"];
+                };
+            };
+        };
+    };
+    exchangeHeadlessCustomerOAuthCode: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CustomerOAuthTokenInput"];
+            };
+        };
+        responses: {
+            /** @description Customer session and cart-merge state */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CustomerAuthenticationResponse"];
+                };
+            };
+            /** @description Invalid, expired, replayed, or incorrectly bound code */
+            401: {
                 headers: {
                     [name: string]: unknown;
                 };

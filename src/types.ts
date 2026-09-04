@@ -69,7 +69,7 @@ export interface CustomerOAuthAuthorizationResponse {
 export interface CustomerOAuthAuthorizationInput {
   redirectUri: string;
   codeChallenge: string;
-  state?: string;
+  state: string;
 }
 export interface CustomerOAuthTokenInput {
   code: string;
