@@ -39,8 +39,11 @@ CI allocates a short-lived, repository-specific fixture and supplies its one-tim
 - guest contact and address details;
 - shipping and payment choices calculated by 1Ecomm;
 - pending order placement when the chosen payment method explicitly allows a non-hosted order.
+- hosted-payment handoff through `carts.createHostedPaymentSession(token, { successUrl, cancelUrl }, intentKey)` for an enabled managed application with a ready merchant payment connection.
 
 For order placement, create one intent key and keep using that same key if the result is uncertain. This prevents a retry from becoming a second order. Ordinary cart changes are not retried automatically.
+
+Hosted handoff is also never retried automatically. Keep the same cart, intent and return URLs after an uncertain response. Redirect to `data.checkoutUrl`; neither that response nor the browser return proves payment. Read the order through authorized order lookup or the customer API. Register exact return origins with the managed application. Merchant provider fees and platform commercial terms are separate from this SDK operation; the helper does not itself enable subscription-only pricing. This source addition requires a package release and provider qualification before a published-package production claim.
 
 ## Preview limits
 
