@@ -1,5 +1,7 @@
 # Testing
 
+The hosted-checkout regression uses a real local HTTP server to inspect method, path, capability and intent headers and JSON, and verifies a 503 produces exactly one request. This proves wire behavior, not a real PSP purchase. Final wave validation runs this together with the existing SDK checks; source-main still needs registry release.
+
 The customer live gate proves return creation, identical same-key replay, changed-payload HTTP 409, collection reads and cancellation. It also proves that replaying a consumed refresh capability invalidates the replacement minted immediately before it.
 
 `npm run check` first verifies the recorded SHA-256 digests of the pinned OpenAPI snapshot and committed generated types, then performs a strict TypeScript build, transport tests and fixed-vector webhook verification tests. A changed snapshot must carry regenerated output and a reviewed two-file digest update in the same commit; generation remains explicit so ordinary CI does not depend on downloading a build tool.

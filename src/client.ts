@@ -1,4 +1,4 @@
-import type { AddCartItemInput, CartResponse, CategoryTreeResponse, CheckoutDetailsInput, CheckoutPreparationResponse, CreateCartResponse, ItemResponse, ListProductsInput, OrderLookupResponse, Page, PlaceOrderResponse, ProblemDetail, ProductSummary, CustomerAddressInput, CustomerAddressResponse, CustomerAddressesResponse, CustomerAddressDeleteResponse, CustomerAuthConfigResponse, CustomerAuthenticationResponse, CustomerCartMergeResponse, CustomerOrderCancellationResponse, CustomerOrderQuery, CustomerOrderResponse, CustomerOrdersResponse, CustomerOtpRequestResponse, CustomerProfileResponse, CustomerProfileUpdateInput, CustomerReturnResponse, CustomerReturnsResponse, CustomerSessionResponse, CustomerLogoutResponse, CustomerPasswordRecoveryRequestResponse, CustomerPasswordRecoveryCompleteResponse, CreateReturnInput, CustomerOAuthAuthorizationInput, CustomerOAuthAuthorizationResponse, CustomerOAuthTokenInput } from './types.js';
+import type { HostedPaymentSessionInput, HostedPaymentSessionResponse, AddCartItemInput, CartResponse, CategoryTreeResponse, CheckoutDetailsInput, CheckoutPreparationResponse, CreateCartResponse, ItemResponse, ListProductsInput, OrderLookupResponse, Page, PlaceOrderResponse, ProblemDetail, ProductSummary, CustomerAddressInput, CustomerAddressResponse, CustomerAddressesResponse, CustomerAddressDeleteResponse, CustomerAuthConfigResponse, CustomerAuthenticationResponse, CustomerCartMergeResponse, CustomerOrderCancellationResponse, CustomerOrderQuery, CustomerOrderResponse, CustomerOrdersResponse, CustomerOtpRequestResponse, CustomerProfileResponse, CustomerProfileUpdateInput, CustomerReturnResponse, CustomerReturnsResponse, CustomerSessionResponse, CustomerLogoutResponse, CustomerPasswordRecoveryRequestResponse, CustomerPasswordRecoveryCompleteResponse, CreateReturnInput, CustomerOAuthAuthorizationInput, CustomerOAuthAuthorizationResponse, CustomerOAuthTokenInput } from './types.js';
 
 export class CommerceApiError extends Error {
   constructor(public readonly problem: ProblemDetail, public readonly rateLimit: RateLimitDiagnostics) { super(problem.detail ?? problem.title); this.name = 'CommerceApiError'; }
@@ -21,6 +21,7 @@ export class HeadlessCommerceClient {
     updateCheckout: (cartToken: string, input: CheckoutDetailsInput, signal?: AbortSignal) => Promise<CheckoutPreparationResponse>;
     selectShippingMethod: (cartToken: string, id: string, signal?: AbortSignal) => Promise<CheckoutPreparationResponse>;
     selectPaymentMethod: (cartToken: string, id: string, signal?: AbortSignal) => Promise<CheckoutPreparationResponse>;
+    createHostedPaymentSession: (cartToken: string, input: HostedPaymentSessionInput, idempotencyKey: string, signal?: AbortSignal) => Promise<HostedPaymentSessionResponse>;
     placeOrder: (cartToken: string, idempotencyKey: string, signal?: AbortSignal) => Promise<PlaceOrderResponse>;
   };
   readonly customer: {
@@ -85,6 +86,13 @@ export class HeadlessCommerceClient {
       updateCheckout: (token, input, signal) => this.request(checkout(), signal, { method: 'PATCH', body: input, cartToken: token, retry: false }),
       selectShippingMethod: (token, id, signal) => this.request(new URL('/v1/headless/carts/current/checkout/shipping-method', this.options.baseUrl), signal, { method: 'PUT', body: { id }, cartToken: token, retry: false }),
       selectPaymentMethod: (token, id, signal) => this.request(new URL('/v1/headless/carts/current/checkout/payment-method', this.options.baseUrl), signal, { method: 'PUT', body: { id }, cartToken: token, retry: false }),
+      createHostedPaymentSession: (token, input, idempotencyKey, signal) => {
+        const key = idempotencyKey.trim();
+        if (!key || key.length > 120) throw new Error('idempotencyKey must be a non-empty string of at most 120 characters');
+        return this.request(new URL('/v1/headless/carts/current/checkout/payment-session', this.options.baseUrl), signal, {
+          method: 'POST', body: input, cartToken: token, idempotencyKey: key, retry: false,
+        });
+      },
       placeOrder: (token, idempotencyKey, signal) => {
         const key = idempotencyKey.trim();
         if (!key || key.length > 120) throw new Error('idempotencyKey must be a non-empty string of at most 120 characters');

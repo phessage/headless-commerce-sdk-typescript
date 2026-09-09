@@ -1,5 +1,7 @@
 # Security
 
+- Hosted checkout forwards a stable intent and exact success/cancel URLs. It never accepts merchant provider credentials or a recipient account and never automatically retries a handoff. Payment state is authoritative only after the backend verifies provider events.
+
 - Return creation is not automatically retried. Persist one stable 1–120 character intent key and reuse it only with the identical payload; changed details with that key fail with HTTP 409.
 - Browser/mobile code accepts only publishable `pk_` credentials.
 - Confidential credentials belong in server-side environment variables or secret managers.
