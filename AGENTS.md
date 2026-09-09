@@ -58,3 +58,5 @@ Update README/security/testing docs whenever behavior changes. State “implemen
 ## Releases
 
 `.github/workflows/release.yml` is the only package publisher. It requires the protected `package-release` environment, an exact version match and a previously unused `v<version>` tag; it tests and install-smokes the packed artifact before publishing to the restricted `@phessage` GitHub Packages registry, then creates the tag and GitHub Release with SBOM/checksums. Never publish from a workstation, move a release tag or replace an existing package version.
+
+Active documentation may exist only on the ecommerce-docs integration ref. Read it with git show origin/integration/saas-launch-20260909:ssot/saas-launch-master-checklist.md (and the tests SSOT) in that repository; do not switch its checkout or treat the primary main copy as the new program state.
