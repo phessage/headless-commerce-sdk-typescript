@@ -1,4 +1,4 @@
-import type { HostedPaymentSessionInput, HostedPaymentSessionResponse, AddCartItemInput, CartResponse, CategoryTreeResponse, CheckoutDetailsInput, CheckoutPreparationResponse, CreateCartResponse, ItemResponse, ListProductsInput, OrderLookupResponse, Page, PlaceOrderResponse, ProblemDetail, ProductSummary, CustomerAddressInput, CustomerAddressResponse, CustomerAddressesResponse, CustomerAddressDeleteResponse, CustomerAuthConfigResponse, CustomerAuthenticationResponse, CustomerCartMergeResponse, CustomerOrderCancellationResponse, CustomerOrderQuery, CustomerOrderResponse, CustomerOrdersResponse, CustomerOtpRequestResponse, CustomerProfileResponse, CustomerProfileUpdateInput, CustomerReturnResponse, CustomerReturnsResponse, CustomerSessionResponse, CustomerLogoutResponse, CustomerPasswordRecoveryRequestResponse, CustomerPasswordRecoveryCompleteResponse, CreateReturnInput, CustomerOAuthAuthorizationInput, CustomerOAuthAuthorizationResponse, CustomerOAuthTokenInput } from './types.js';
+import type { ProductVariantsResponse, HostedPaymentSessionInput, HostedPaymentSessionResponse, AddCartItemInput, CartResponse, CategoryTreeResponse, CheckoutDetailsInput, CheckoutPreparationResponse, CreateCartResponse, ItemResponse, ListProductsInput, OrderLookupResponse, Page, PlaceOrderResponse, ProblemDetail, ProductSummary, CustomerAddressInput, CustomerAddressResponse, CustomerAddressesResponse, CustomerAddressDeleteResponse, CustomerAuthConfigResponse, CustomerAuthenticationResponse, CustomerCartMergeResponse, CustomerOrderCancellationResponse, CustomerOrderQuery, CustomerOrderResponse, CustomerOrdersResponse, CustomerOtpRequestResponse, CustomerProfileResponse, CustomerProfileUpdateInput, CustomerReturnResponse, CustomerReturnsResponse, CustomerSessionResponse, CustomerLogoutResponse, CustomerPasswordRecoveryRequestResponse, CustomerPasswordRecoveryCompleteResponse, CreateReturnInput, CustomerOAuthAuthorizationInput, CustomerOAuthAuthorizationResponse, CustomerOAuthTokenInput } from './types.js';
 
 export class CommerceApiError extends Error {
   constructor(public readonly problem: ProblemDetail, public readonly rateLimit: RateLimitDiagnostics) { super(problem.detail ?? problem.title); this.name = 'CommerceApiError'; }
@@ -8,7 +8,7 @@ export interface ClientOptions { baseUrl: string; publishableKey: string; fetch?
 export interface StoreClientOptions { storeId: string; bootstrapUrl?: string; fetch?: typeof globalThis.fetch; maxRetries?: number; timeoutMs?: number }
 export interface StoreRuntime { storeId: string; apiUrl: string; publishableKey: string; apiVersion: 'v1'; capabilities: Array<'catalog' | 'cart' | 'checkout-preparation'> }
 export class HeadlessCommerceClient {
-  readonly products: { list: (input?: ListProductsInput) => Promise<Page<ProductSummary>>; get: (id: string, signal?: AbortSignal) => Promise<ItemResponse<ProductSummary>> };
+  readonly products: { variants: (id: string, signal?: AbortSignal) => Promise<ProductVariantsResponse>; list: (input?: ListProductsInput) => Promise<Page<ProductSummary>>; get: (id: string, signal?: AbortSignal) => Promise<ItemResponse<ProductSummary>> };
   readonly categories: { list: (signal?: AbortSignal) => Promise<CategoryTreeResponse> };
   readonly orders: { lookup: (orderNumber: string, email: string, signal?: AbortSignal) => Promise<OrderLookupResponse> };
   readonly carts: {
@@ -70,7 +70,7 @@ export class HeadlessCommerceClient {
     if (!options.publishableKey.startsWith('pk_')) throw new Error('Browser clients require a publishable key');
     HeadlessCommerceClient.validTimeout(options.timeoutMs);
     this.fetcher = options.fetch ?? globalThis.fetch;
-    this.products = { list: (input = {}) => this.listProducts(input), get: (id, signal) => this.request(new URL(`/v1/headless/products/${encodeURIComponent(id)}`, this.options.baseUrl), signal) };
+    this.products = { variants: (id, signal) => this.request(new URL(`/v1/headless/products/${encodeURIComponent(id)}/variants`, this.options.baseUrl), signal), list: (input = {}) => this.listProducts(input), get: (id, signal) => this.request(new URL(`/v1/headless/products/${encodeURIComponent(id)}`, this.options.baseUrl), signal) };
     this.categories = { list: (signal) => this.request(new URL('/v1/headless/products/categories', this.options.baseUrl), signal) };
     this.orders = { lookup: (orderNumber, email, signal) => this.request(new URL('/v1/headless/orders/lookup', this.options.baseUrl), signal, { method: 'POST', body: { orderNumber, email }, retry: false }) };
     const current = () => new URL('/v1/headless/carts/current', this.options.baseUrl);

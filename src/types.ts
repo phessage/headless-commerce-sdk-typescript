@@ -29,6 +29,8 @@ export interface CheckoutPreparation { cart: Cart; customerInfo: CheckoutContact
 export interface CheckoutPreparationResponse { data: CheckoutPreparation; requestId: string }
 export interface OrderConfirmation { orderId: string; orderNumber: string; status: string; paymentStatus: string; requiresPayment: false; checkoutToken?: string }
 export interface PlaceOrderResponse { data: OrderConfirmation; requestId: string }
+export type ProductVariant = Schema<'ProductVariant'>;
+export type ProductVariantsResponse = Schema<'ProductVariantsResponse'>;
 export type HostedPaymentSessionInput = Schema<'HostedPaymentSessionInput'>;
 export type HostedPaymentSessionResponse = Schema<'HostedPaymentSessionResponse'>;
 export interface GuestOrderItem { productName: string; variantName: string | null; quantity: number; unitPrice: string | number; totalPrice: string | number; fulfillmentStatus: string | null; backordered: boolean; backorderedQuantity: number; isPreorder: boolean; expectedShipDate: string | null; estimatedDeliveryDate: string | null }

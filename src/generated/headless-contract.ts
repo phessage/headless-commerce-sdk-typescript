@@ -632,6 +632,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/headless/products/{id}/variants": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List active variants of a published product; availability is advisory until cart validation */
+        get: operations["listProductVariants"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -1244,6 +1261,21 @@ export interface components {
         ProductPage: {
             data: components["schemas"]["ProductSummary"][];
             nextCursor: string | null;
+            /** Format: uuid */
+            requestId: string;
+        };
+        ProductVariant: {
+            /** Format: uuid */
+            id: string;
+            title: string;
+            price: components["schemas"]["Money"];
+            selectedOptions: {
+                [key: string]: string;
+            };
+            available: boolean;
+        };
+        ProductVariantsResponse: {
+            data: components["schemas"]["ProductVariant"][];
             /** Format: uuid */
             requestId: string;
         };
@@ -3173,6 +3205,55 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ProductResponse"];
+                };
+            };
+            /** @description Missing or invalid publishable key */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HeadlessProblem"];
+                };
+            };
+            /** @description Product does not exist in the key-bound store or is not published */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HeadlessProblem"];
+                };
+            };
+            /** @description Unexpected or unlisted headless failure */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HeadlessProblem"];
+                };
+            };
+        };
+    };
+    listProductVariants: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Public variant choices without internal costs or inventory counts */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProductVariantsResponse"];
                 };
             };
             /** @description Missing or invalid publishable key */
