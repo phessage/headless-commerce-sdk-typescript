@@ -30,7 +30,7 @@ The client discovers the correct public API settings from that one store ID. Do 
 
 Run `npm run test:live` to prove the complete maintained fixture journey against the deployed service. It creates an isolated cart and a pending bank-transfer test order; it does not charge money. Set `HEADLESS_STORE_ID` and `HEADLESS_PRODUCT_ID` only when testing another provisioned sandbox.
 
-CI allocates a short-lived, repository-specific fixture and supplies its one-time runtime credentials to two journeys. The normal CI journey proves anonymous checkout and pending-order lookup. The manually dispatched **Customer account live** gate proves password sessions, anonymous-cart merge, profile and address-book operations, non-hosted customer checkout, order history/detail/cancellation, return collection reads, refresh rotation/replay rejection and logout. Fixture release runs from `finally`, including after failed assertions. A missing allocator secret is a hard failure, never a skipped green gate.
+After compatible deployment, the manually dispatched **Post-deployment order acceptance** workflow allocates a short-lived, repository-specific fixture and proves anonymous checkout and pending-order lookup. Integration/wave development uses compilation only; final local tests precede main release. The manually dispatched **Customer account live** gate proves password sessions, anonymous-cart merge, profile and address-book operations, non-hosted customer checkout, order history/detail/cancellation, return collection reads, refresh rotation/replay rejection and logout. Fixture release runs from `finally`, including after failed assertions. A missing allocator secret is a hard failure, never a skipped green gate.
 
 ## What the SDK supports
 

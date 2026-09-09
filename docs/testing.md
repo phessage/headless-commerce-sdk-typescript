@@ -1,3 +1,7 @@
+# Development-phase timing
+
+During implementation, compile with `npm run build` and record pending cases in ecommerce-docs/ssot/tests/saas-launch-final-validation.md. Author/run the relevant combined tests only in the final local stage. Run `live-order-acceptance.yml` and the existing customer live workflow after compatible production deployment; they are not development PR gates. Existing test contracts below remain final-stage requirements.
+
 # Testing
 
 The hosted-checkout regression uses a real local HTTP server to inspect method, path, capability and intent headers and JSON, and verifies a 503 produces exactly one request. This proves wire behavior, not a real PSP purchase. Final wave validation runs this together with the existing SDK checks; source-main still needs registry release.
