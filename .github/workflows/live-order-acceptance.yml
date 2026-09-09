@@ -1,0 +1,27 @@
+name: Post-deployment order acceptance
+# Run only after the compatible backend and storefront release is deployed.
+on:
+  workflow_dispatch:
+permissions: { contents: read }
+concurrency:
+  group: post-deployment-order-acceptance
+  cancel-in-progress: false
+jobs:
+  live-order:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20, cache: npm }
+      - run: npm ci
+      - run: npm run build
+      - name: Allocate isolated deployed fixture
+        env: {HEADLESS_E2E_ALLOCATOR_TOKEN: '${{ secrets.HEADLESS_E2E_ALLOCATOR_TOKEN }}'}
+        run: bash .github/scripts/headless-fixture.sh allocate
+      - name: Run deployed catalog-to-order journey
+        run: npm run test:live
+      - name: Release isolated deployed fixture
+        if: always()
+        env: {HEADLESS_E2E_ALLOCATOR_TOKEN: '${{ secrets.HEADLESS_E2E_ALLOCATOR_TOKEN }}'}
+        run: bash .github/scripts/headless-fixture.sh release
