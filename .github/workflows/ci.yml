@@ -10,6 +10,7 @@ jobs:
         with: { node-version: 20, cache: npm }
       - run: npm ci
       - run: npm run check
+      - run: npm run pack:check
       - name: Allocate isolated deployed fixture
         env: {HEADLESS_E2E_ALLOCATOR_TOKEN: '${{ secrets.HEADLESS_E2E_ALLOCATOR_TOKEN }}'}
         run: bash .github/scripts/headless-fixture.sh allocate

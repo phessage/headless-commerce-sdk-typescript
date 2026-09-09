@@ -1234,6 +1234,39 @@ paths:
           content:
             application/problem+json:
               schema: { $ref: '#/components/schemas/HeadlessProblem' }
+  /v1/headless/products/{id}/variants:
+    get:
+      operationId: listProductVariants
+      summary: List active variants of a published product; availability is advisory until cart validation
+      security: [{ headlessPublishableKey: [] }]
+      parameters:
+        - {
+            name: id,
+            in: path,
+            required: true,
+            schema: { type: string, format: uuid },
+          }
+      responses:
+        '200':
+          description: Public variant choices without internal costs or inventory counts
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ProductVariantsResponse' }
+        '401':
+          description: Missing or invalid publishable key
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/HeadlessProblem' }
+        '404':
+          description: Product does not exist in the key-bound store or is not published
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/HeadlessProblem' }
+        default:
+          description: Unexpected or unlisted headless failure
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/HeadlessProblem' }
 components:
   securitySchemes:
     headlessPublishableKey:
@@ -2182,6 +2215,27 @@ components:
             items: { $ref: '#/components/schemas/ProductSummary' },
           }
         nextCursor: { type: [string, 'null'] }
+        requestId: { type: string, format: uuid }
+    ProductVariant:
+      type: object
+      additionalProperties: false
+      required: [id, title, price, selectedOptions, available]
+      properties:
+        id: { type: string, format: uuid }
+        title: { type: string }
+        price: { $ref: '#/components/schemas/Money' }
+        selectedOptions:
+          type: object
+          additionalProperties: { type: string }
+        available: { type: boolean }
+    ProductVariantsResponse:
+      type: object
+      additionalProperties: false
+      required: [data, requestId]
+      properties:
+        data:
+          type: array
+          items: { $ref: '#/components/schemas/ProductVariant' }
         requestId: { type: string, format: uuid }
     ProductResponse:
       type: object
