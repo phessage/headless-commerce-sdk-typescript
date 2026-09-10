@@ -1978,10 +1978,40 @@ components:
         postalCode: { type: string, maxLength: 30 }
         country: { type: string, minLength: 2, maxLength: 2 }
         sameAsBilling: { type: boolean }
+    CheckoutFulfillmentInput:
+      type: object
+      additionalProperties: false
+      required: [mode]
+      properties:
+        mode: { type: string, enum: [ship, pickup] }
+        pickupLocationId: { type: string, format: uuid }
+    CheckoutFulfillment:
+      type: object
+      additionalProperties: false
+      required: [mode, pickupLocationId]
+      properties:
+        mode: { type: string, enum: [ship, pickup] }
+        pickupLocationId: { type: [string, 'null'], format: uuid }
+    HeadlessPickupLocation:
+      type: object
+      additionalProperties: false
+      required: [id, name, available]
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        available: { type: boolean }
+        addressLine1: { type: [string, 'null'] }
+        addressLine2: { type: [string, 'null'] }
+        city: { type: [string, 'null'] }
+        state: { type: [string, 'null'] }
+        postalCode: { type: [string, 'null'] }
+        country: { type: [string, 'null'] }
+        phone: { type: [string, 'null'] }
     CheckoutDetailsInput:
       type: object
       additionalProperties: false
       properties:
+        fulfillment: { $ref: '#/components/schemas/CheckoutFulfillmentInput' }
         customerInfo: { $ref: '#/components/schemas/CheckoutContact' }
         billingAddress: { $ref: '#/components/schemas/CheckoutAddress' }
         shippingAddress: { $ref: '#/components/schemas/CheckoutAddress' }
@@ -2037,6 +2067,8 @@ components:
           billingAddress,
           shippingAddress,
           shippingOptions,
+          fulfillment,
+          pickupLocations,
           paymentMethods,
           selectedShippingMethodId,
           selectedPaymentMethodId,
@@ -2044,6 +2076,10 @@ components:
           missing,
         ]
       properties:
+        fulfillment: { $ref: '#/components/schemas/CheckoutFulfillment' }
+        pickupLocations:
+          type: array
+          items: { $ref: '#/components/schemas/HeadlessPickupLocation' }
         cart: { $ref: '#/components/schemas/Cart' }
         customerInfo: { $ref: '#/components/schemas/CheckoutContact' }
         billingAddress: { $ref: '#/components/schemas/CheckoutAddress' }

@@ -56,3 +56,8 @@ The `customer` client covers auth configuration, password sign-in and secure rec
 `client.products.variants(productId)` returns active variant choices (`id`, `title`, `price`, `selectedOptions`, `available`) from the key-bound store. Ask the shopper to choose among multiple variants and pass its ID to `client.carts.addItem(token, { productId, variantId, quantity })`. The API remains authoritative for stock and price; do not interpret a product summary as proof that every variant is purchasable. This method requires the compatible variants API deployment.
 
 Version `0.1.0-preview.4` is a release candidate until its protected release workflow publishes it. Maintainers can build a licensed `.tgz` with `npm pack` and supply it to authorized customers, who install it with `npm install ./phessage-headless-commerce-sdk-0.1.0-preview.4.tgz` without a private-registry token. Preserve the license and checksum; do not redistribute a reusable SDK publicly. `npm run pack:check` exercises variant reads and non-retrying hosted payment creation through real HTTP from the installed tarball. Publication to the restricted registry remains exclusive to the protected release workflow.
+
+
+## Wave 24 integration additions
+
+Use `carts.updateCheckout(token, { fulfillment: { mode: "pickup", pickupLocationId } })` with a location from `pickupLocations`. The response reports persisted `fulfillment` and readiness; unavailable stock is rejected by the API. Switch back with `{ fulfillment: { mode: "ship" } }`. These integration types require the compatible backend release.
