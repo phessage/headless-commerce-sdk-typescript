@@ -1115,7 +1115,33 @@ export interface components {
             country?: string;
             sameAsBilling?: boolean;
         };
+        CheckoutFulfillmentInput: {
+            /** @enum {string} */
+            mode: "ship" | "pickup";
+            /** Format: uuid */
+            pickupLocationId?: string;
+        };
+        CheckoutFulfillment: {
+            /** @enum {string} */
+            mode: "ship" | "pickup";
+            /** Format: uuid */
+            pickupLocationId: string | null;
+        };
+        HeadlessPickupLocation: {
+            /** Format: uuid */
+            id: string;
+            name: string;
+            available: boolean;
+            addressLine1?: string | null;
+            addressLine2?: string | null;
+            city?: string | null;
+            state?: string | null;
+            postalCode?: string | null;
+            country?: string | null;
+            phone?: string | null;
+        };
         CheckoutDetailsInput: {
+            fulfillment?: components["schemas"]["CheckoutFulfillmentInput"];
             customerInfo?: components["schemas"]["CheckoutContact"];
             billingAddress?: components["schemas"]["CheckoutAddress"];
             shippingAddress?: components["schemas"]["CheckoutAddress"];
@@ -1147,6 +1173,8 @@ export interface components {
             };
         };
         CheckoutPreparation: {
+            fulfillment: components["schemas"]["CheckoutFulfillment"];
+            pickupLocations: components["schemas"]["HeadlessPickupLocation"][];
             cart: components["schemas"]["Cart"];
             customerInfo: components["schemas"]["CheckoutContact"];
             billingAddress: components["schemas"]["CheckoutAddress"];
