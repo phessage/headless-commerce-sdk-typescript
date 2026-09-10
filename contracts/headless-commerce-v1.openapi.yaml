@@ -2195,6 +2195,33 @@ components:
         isPreorder: { type: boolean }
         expectedShipDate: { type: [string, 'null'], format: date-time }
         estimatedDeliveryDate: { type: [string, 'null'], format: date-time }
+    OrderPickupLocation:
+      type: object
+      additionalProperties: false
+      required: [id, name]
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        addressLine1: { type: string }
+        addressLine2: { type: string }
+        city: { type: string }
+        state: { type: string }
+        postalCode: { type: string }
+        country: { type: string }
+        phone: { type: string }
+    OrderFulfillment:
+      type: object
+      additionalProperties: false
+      required: [mode, pickupLocationId, pickupStatus, pickupReadyAt, pickupLocation]
+      properties:
+        mode: { type: string, enum: [ship, pickup] }
+        pickupLocationId: { type: [string, 'null'], format: uuid }
+        pickupStatus: { type: [string, 'null'] }
+        pickupReadyAt: { type: [string, 'null'], format: date-time }
+        pickupLocation:
+          oneOf:
+            - { $ref: '#/components/schemas/OrderPickupLocation' }
+            - { type: 'null' }
     GuestOrder:
       type: object
       additionalProperties: false
@@ -2212,6 +2239,7 @@ components:
           discountAmount,
           total,
           shippingAddress,
+          fulfillment,
           items,
           tracking,
         ]
@@ -2227,6 +2255,7 @@ components:
         shippingAmount: { type: [string, number] }
         discountAmount: { type: [string, number] }
         total: { type: [string, number] }
+        fulfillment: { $ref: '#/components/schemas/OrderFulfillment' }
         shippingAddress: { type: [object, 'null'], additionalProperties: true }
         items:
           {
