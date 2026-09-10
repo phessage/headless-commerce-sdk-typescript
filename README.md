@@ -61,3 +61,6 @@ Version `0.1.0-preview.4` is a release candidate until its protected release wor
 ## Wave 24 integration additions
 
 Use `carts.updateCheckout(token, { fulfillment: { mode: "pickup", pickupLocationId } })` with a location from `pickupLocations`. The response reports persisted `fulfillment` and readiness; unavailable stock is rejected by the API. Switch back with `{ fulfillment: { mode: "ship" } }`. These integration types require the compatible backend release.
+
+
+Wave 25 integration: checkout preparation returns active country address requirements. `CheckoutPreparation.countries` contains code/name and stateRequired/postalCodeRequired flags; delivery availability still comes from checkout shipping options. These changes are not yet deployed or runtime-qualified.

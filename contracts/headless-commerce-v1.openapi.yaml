@@ -2057,12 +2057,22 @@ components:
         type: { type: string }
         icon: { type: [string, 'null'] }
         capabilities: { type: object, additionalProperties: true }
+    CheckoutCountry:
+      type: object
+      additionalProperties: false
+      required: [code, name, stateRequired, postalCodeRequired]
+      properties:
+        code: { type: string }
+        name: { type: string }
+        stateRequired: { type: boolean }
+        postalCodeRequired: { type: boolean }
     CheckoutPreparation:
       type: object
       additionalProperties: false
       required:
         [
           cart,
+          countries,
           customerInfo,
           billingAddress,
           shippingAddress,
@@ -2076,6 +2086,9 @@ components:
           missing,
         ]
       properties:
+        countries:
+          type: array
+          items: { $ref: '#/components/schemas/CheckoutCountry' }
         fulfillment: { $ref: '#/components/schemas/CheckoutFulfillment' }
         pickupLocations:
           type: array

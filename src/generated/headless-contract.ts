@@ -1172,7 +1172,14 @@ export interface components {
                 [key: string]: unknown;
             };
         };
+        CheckoutCountry: {
+            code: string;
+            name: string;
+            stateRequired: boolean;
+            postalCodeRequired: boolean;
+        };
         CheckoutPreparation: {
+            countries: components["schemas"]["CheckoutCountry"][];
             fulfillment: components["schemas"]["CheckoutFulfillment"];
             pickupLocations: components["schemas"]["HeadlessPickupLocation"][];
             cart: components["schemas"]["Cart"];
