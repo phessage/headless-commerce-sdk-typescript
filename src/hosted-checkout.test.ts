@@ -26,3 +26,25 @@ it('sends the hosted contract over real HTTP and never retries an uncertain prov
     expect(requests).toHaveLength(1);
   } finally { server.closeAllConnections(); await new Promise<void>((resolve, reject) => server.close(e => e ? reject(e) : resolve())); }
 });
+
+
+it('roundtrips pickup selection and country guidance through HTTP', async () => {
+  const selections: unknown[] = [];
+  const server = createServer(async (req, res) => {
+    let body = ''; for await (const chunk of req) body += chunk;
+    expect(req.method).toBe('PATCH'); expect(req.url).toBe('/v1/headless/carts/current/checkout');
+    expect(req.headers['x-cart-token']).toBe('hc_fixture');
+    const input = JSON.parse(body); selections.push(input);
+    res.writeHead(200, { 'content-type': 'application/json' });
+    res.end(JSON.stringify({ data: { fulfillment: { ...input.fulfillment, pickupLocationId: input.fulfillment.pickupLocationId ?? null }, countries: [{ code: 'HK', name: 'Hong Kong', stateRequired: false, postalCodeRequired: false }] }, requestId: 'pickup-contract' }));
+  }).listen(0, '127.0.0.1');
+  await once(server, 'listening'); const address = server.address(); if (!address || typeof address === 'string') throw new Error('address');
+  try {
+    const client = new HeadlessCommerceClient({ baseUrl: `http://127.0.0.1:${address.port}`, publishableKey: 'pk_fixture' });
+    const picked = await client.carts.updateCheckout('hc_fixture', { fulfillment: { mode: 'pickup', pickupLocationId: 'location-1' } });
+    expect(picked.data.fulfillment.pickupLocationId).toBe('location-1'); expect(picked.data.countries[0].postalCodeRequired).toBe(false);
+    const shipped = await client.carts.updateCheckout('hc_fixture', { fulfillment: { mode: 'ship' } });
+    expect(shipped.data.fulfillment).toEqual({ mode: 'ship', pickupLocationId: null });
+    expect(selections).toEqual([{ fulfillment: { mode: 'pickup', pickupLocationId: 'location-1' } }, { fulfillment: { mode: 'ship' } }]);
+  } finally { server.closeAllConnections(); await new Promise<void>((resolve, reject) => server.close(error => error ? reject(error) : resolve())); }
+});
