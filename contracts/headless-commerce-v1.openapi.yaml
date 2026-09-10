@@ -1680,6 +1680,7 @@ components:
           shippingAmount,
           discountAmount,
           total,
+          fulfillment,
           items,
         ]
       properties:
@@ -1694,6 +1695,7 @@ components:
         shippingAmount: { type: string }
         discountAmount: { type: string }
         total: { type: string }
+        fulfillment: { $ref: '#/components/schemas/OrderFulfillment' }
         items:
           type: array
           items: { $ref: '#/components/schemas/CustomerOrderItem' }

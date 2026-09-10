@@ -919,6 +919,7 @@ export interface components {
             shippingAmount: string;
             discountAmount: string;
             total: string;
+            fulfillment: components["schemas"]["OrderFulfillment"];
             items: components["schemas"]["CustomerOrderItem"][];
             shippingAddress?: {
                 [key: string]: unknown;
