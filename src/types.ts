@@ -38,7 +38,9 @@ export type ProductVariantsResponse = Schema<'ProductVariantsResponse'>;
 export type HostedPaymentSessionInput = Schema<'HostedPaymentSessionInput'>;
 export type HostedPaymentSessionResponse = Schema<'HostedPaymentSessionResponse'>;
 export interface GuestOrderItem { productName: string; variantName: string | null; quantity: number; unitPrice: string | number; totalPrice: string | number; fulfillmentStatus: string | null; backordered: boolean; backorderedQuantity: number; isPreorder: boolean; expectedShipDate: string | null; estimatedDeliveryDate: string | null }
-export interface GuestOrder { id: string; orderNumber: string; status: string; paymentStatus: string; createdAt: string; currency: string; subtotal: string | number; taxAmount: string | number; shippingAmount: string | number; discountAmount: string | number; total: string | number; shippingAddress: Record<string, unknown> | null; items: GuestOrderItem[]; tracking: Record<string, unknown> | null }
+export interface OrderPickupLocation { id: string; name: string; addressLine1?: string; addressLine2?: string; city?: string; state?: string; postalCode?: string; country?: string; phone?: string }
+export interface OrderFulfillment { mode: 'ship' | 'pickup'; pickupLocationId: string | null; pickupStatus: string | null; pickupReadyAt: string | null; pickupLocation: OrderPickupLocation | null }
+export interface GuestOrder { id: string; orderNumber: string; status: string; paymentStatus: string; createdAt: string; currency: string; subtotal: string | number; taxAmount: string | number; shippingAmount: string | number; discountAmount: string | number; total: string | number; shippingAddress: Record<string, unknown> | null; fulfillment: OrderFulfillment; items: GuestOrderItem[]; tracking: Record<string, unknown> | null }
 export interface OrderLookupResponse { data: GuestOrder; requestId: string }
 export type CustomerSession = Schema<'CustomerSession'>;
 export type CustomerAuthentication = Schema<'CustomerAuthentication'>;

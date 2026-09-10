@@ -919,6 +919,7 @@ export interface components {
             shippingAmount: string;
             discountAmount: string;
             total: string;
+            fulfillment: components["schemas"]["OrderFulfillment"];
             items: components["schemas"]["CustomerOrderItem"][];
             shippingAddress?: {
                 [key: string]: unknown;
@@ -1256,6 +1257,28 @@ export interface components {
             /** Format: date-time */
             estimatedDeliveryDate?: string | null;
         };
+        OrderPickupLocation: {
+            /** Format: uuid */
+            id: string;
+            name: string;
+            addressLine1?: string;
+            addressLine2?: string;
+            city?: string;
+            state?: string;
+            postalCode?: string;
+            country?: string;
+            phone?: string;
+        };
+        OrderFulfillment: {
+            /** @enum {string} */
+            mode: "ship" | "pickup";
+            /** Format: uuid */
+            pickupLocationId: string | null;
+            pickupStatus: string | null;
+            /** Format: date-time */
+            pickupReadyAt: string | null;
+            pickupLocation: components["schemas"]["OrderPickupLocation"] | null;
+        };
         GuestOrder: {
             /** Format: uuid */
             id: string;
@@ -1270,6 +1293,7 @@ export interface components {
             shippingAmount: string | number;
             discountAmount: string | number;
             total: string | number;
+            fulfillment: components["schemas"]["OrderFulfillment"];
             shippingAddress: {
                 [key: string]: unknown;
             } | null;
