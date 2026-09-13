@@ -1,5 +1,9 @@
 # 1Ecomm Headless Commerce TypeScript SDK
 
+<!-- 1ecomm-discovery -->
+> Part of **[1Ecomm headless commerce](https://www.1ecomm.com/headless-commerce)** — catalog, cart, checkout and order APIs for custom storefronts and apps.
+> Fastest start: `npm create @1ecomm/storefront@latest` · [CLI guide](https://www.1ecomm.com/headless-commerce/cli.html) · [OpenAPI contract](https://www.1ecomm.com/headless-commerce/openapi.yaml) · [All starters and SDKs](https://www.1ecomm.com/headless-commerce#starters)
+
 Free for authorized 1Ecomm customers and their developers to build and operate 1Ecomm-connected commerce experiences. You may deploy finished sites and compiled shopper apps, but may not redistribute, resell, sublicense, mirror, or republish this SDK or a reusable derivative. See [LICENSE.md](LICENSE.md).
 
 The package includes a reviewed snapshot of the public OpenAPI 3.1 contract and generated path, operation and schema types. `npm run contract:check` verifies the reviewed source/output digests; `npm run contract:generate` refreshes the generated layer with the pinned generator. Application-facing methods remain ergonomic, while customer authentication, profile, address, order, return and RFC 9457 problem payloads are aliases of the generated wire contract rather than hand-maintained approximations.
