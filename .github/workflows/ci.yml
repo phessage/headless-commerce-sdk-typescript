@@ -7,8 +7,9 @@ on:
 permissions: { contents: read }
 jobs:
   check:
-    # Keep full checks on the maintained pool while hosted billing is unavailable.
-    runs-on: [self-hosted, linux, x64]
+    # Hosted runners: the repository is public and the organisation runner pool
+    # does not serve public repositories. Hosted minutes are free for public repos.
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
