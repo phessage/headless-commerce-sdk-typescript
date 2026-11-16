@@ -18,7 +18,7 @@ concurrency:
 
 jobs:
   release:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, Linux, X64]
     environment: package-release
     steps:
       - uses: actions/checkout@v4
@@ -38,6 +38,11 @@ jobs:
             echo "Tag v$RELEASE_VERSION already exists" >&2
             exit 1
           fi
+      - name: Install GitHub CLI into the job workspace
+        run: |
+          v=2.62.0
+          curl -fsSL "https://github.com/cli/cli/releases/download/v${v}/gh_${v}_linux_amd64.tar.gz" | tar -xz -C "$RUNNER_TEMP"
+          echo "$RUNNER_TEMP/gh_${v}_linux_amd64/bin" >> "$GITHUB_PATH"
       - run: npm ci
       - run: npm run check
       - run: npm run pack:check
@@ -46,7 +51,7 @@ jobs:
           mkdir release
           npm pack --pack-destination release
           npm sbom --sbom-format=spdx > release/phessage-headless-commerce-sdk.spdx.json
-          shasum -a 256 release/* > release/SHA256SUMS
+          sha256sum release/* > release/SHA256SUMS
       - name: Publish restricted package
         run: npm publish
         env:
